@@ -1,6 +1,6 @@
 {
   "name": "opencode-omeglecode",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "description": "Real-time anonymous group chat in the OpenCode v2 sidebar",
   "license": "MIT",
   "repository": {
@@ -16,8 +16,14 @@
     "tui"
   ],
   "type": "module",
+  "bin": {
+    "omeglecode": "./dist/install.js"
+  },
   "exports": {
-    "./tui": "./dist/tui.js"
+    ".": "./dist/package.js",
+    "./tui": {
+      "default": "./dist/tui.js"
+    }
   },
   "files": [
     "dist",
@@ -28,14 +34,12 @@
     "opencode": ">=0.0.0-beta-18414"
   },
   "scripts": {
-    "build": "esbuild src/tui.tsx --bundle --format=esm --platform=node --jsx=automatic --jsx-import-source=@opentui/solid --outfile=dist/tui.js --external:@opencode-ai/plugin --external:@opentui/core --external:@opentui/solid --external:solid-js",
+    "build": "esbuild src/tui.tsx --bundle --format=esm --platform=node --jsx=automatic --jsx-import-source=@opentui/solid --outfile=dist/tui.js --external:@opencode-ai/plugin --external:@opentui/core --external:@opentui/solid --external:solid-js && cp package.js install.js dist/",
     "check": "tsc --noEmit"
-  },
-  "dependencies": {
-    "@opencode-ai/plugin": "0.0.0-beta-18414"
   },
   "devDependencies": {
     "@omeglecode/protocol": "workspace:*",
+    "@opencode-ai/plugin": "0.0.0-beta-18414",
     "@opencode-ai/theme": "0.0.0-beta-18414",
     "@opentui/core": "0.5.8",
     "@opentui/keymap": "0.5.8",

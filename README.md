@@ -8,28 +8,28 @@ Install the OpenCode v2 preview. It uses the separate `opencode2` command and do
 
 ```sh
 npm install --global @opencode-ai/cli@beta
-opencode2 plugin add opencode-omeglecode
+npx --yes opencode-omeglecode@latest weekend-test
 opencode2
 ```
 
-Then start or open a session, run `/omeglecode-nickname`, and run `/omeglecode` to show chat. Press `ctrl+shift+m` to focus the input and Enter to send.
+Replace `weekend-test` with a private room code shared by your friends. Then start or open a session, run `/omeglecode-nickname`, and run `/omeglecode` to show chat. Press `ctrl+shift+m` to focus the input and Enter to send.
 
 ### Join the same room
 
-After installation, replace the Omeglecode entry in `~/.config/opencode/cli.json` with a shared invite code:
+The installer writes the room to OpenCode's global `cli.json`. The resulting entry looks like:
 
 ```json
 {
   "plugins": [
     {
-      "package": "opencode-omeglecode",
+      "package": "/path/to/opencode-omeglecode/dist/tui.js",
       "options": { "room": "weekend-test" }
     }
   ]
 }
 ```
 
-Everyone using the same 3–32 character code joins the same room. Treat the code like an invite link; anyone who knows it can join, up to the eight-person limit.
+Everyone using the same 3–32 character code joins the same room. Treat the code like an invite link; anyone who knows it can join, up to the eight-person limit. Run the `npx` installer again to change rooms.
 
 ## Packages
 

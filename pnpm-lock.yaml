@@ -25,14 +25,13 @@ importers:
         version: 5.9.3
 
   packages/plugin:
-    dependencies:
-      '@opencode-ai/plugin':
-        specifier: 0.0.0-beta-18414
-        version: 0.0.0-beta-18414(@opencode-ai/theme@0.0.0-beta-18414(typescript@5.9.3)(web-tree-sitter@0.25.10))(@opentui/core@0.5.8(typescript@5.9.3)(web-tree-sitter@0.25.10))(@opentui/solid@0.5.8(solid-js@1.9.12)(typescript@5.9.3)(web-tree-sitter@0.25.10))(solid-js@1.9.12)
     devDependencies:
       '@omeglecode/protocol':
         specifier: workspace:*
         version: link:../protocol
+      '@opencode-ai/plugin':
+        specifier: 0.0.0-beta-18414
+        version: 0.0.0-beta-18414(@opencode-ai/theme@0.0.0-beta-18414(typescript@5.9.3)(web-tree-sitter@0.25.10))(@opentui/core@0.5.8(typescript@5.9.3)(web-tree-sitter@0.25.10))(@opentui/solid@0.5.8(solid-js@1.9.12)(typescript@5.9.3)(web-tree-sitter@0.25.10))(solid-js@1.9.12)
       '@opencode-ai/theme':
         specifier: 0.0.0-beta-18414
         version: 0.0.0-beta-18414(typescript@5.9.3)(web-tree-sitter@0.25.10)

@@ -1,5 +1,5 @@
 /** @jsxImportSource @opentui/solid */
-import { Plugin } from "@opencode-ai/plugin/tui";
+import type { Plugin } from "@opencode-ai/plugin/tui";
 import { onCleanup } from "solid-js";
 import { validNickname, validRoomCode } from "@omeglecode/protocol";
 import { createChat } from "./Chat.js";
@@ -59,7 +59,7 @@ function Connection(props: {
   return <box visible={false} />;
 }
 
-const plugin = Plugin.define({
+const plugin: Plugin.Definition = {
   id: "omeglecode",
   setup(context) {
     const configured =
@@ -216,6 +216,6 @@ const plugin = Plugin.define({
       home();
     };
   },
-});
+};
 
 export default plugin;
