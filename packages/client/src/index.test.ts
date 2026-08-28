@@ -106,11 +106,33 @@ describe("helpers", () => {
 
 describe("createChat", () => {
   test("connects with a hashed session and optional room", async () => {
-    const { socket } = await connected();
+    const { chat, socket } = await connected();
+    expect(chat.room()).toBe("weekend-test");
     const url = new URL(socket.url);
     expect(url.searchParams.get("nickname")).toBe("maya");
     expect(url.searchParams.get("room")).toBe("weekend-test");
     expect(url.searchParams.get("session")).toBe(await sessionHash("session-1"));
+  });
+
+  test("records the assigned room from ready during matchmaking", async () => {
+    installFakeSocket();
+    const chat = createChat({ endpoint: "wss://example.test/connect" });
+    chat.connect("session-1", "maya", undefined);
+    await vi.waitFor(() => {
+      expect(FakeWebSocket.instances[0]).toBeDefined();
+    });
+    expect(chat.room()).toBe("");
+    const socket = FakeWebSocket.instances[0]!;
+    socket.open();
+    socket.message(
+      JSON.stringify({
+        type: "ready",
+        room: "k7nmpwx2q4",
+        online: 1,
+        history: [],
+      }),
+    );
+    expect(chat.room()).toBe("k7nmpwx2q4");
   });
 
   test("applies ready, message, presence, and error events", async () => {
@@ -128,6 +150,7 @@ describe("createChat", () => {
         ],
       }),
     );
+    expect(chat.room()).toBe("room-1");
     expect(chat.online()).toBe(2);
     expect(chat.messages()).toEqual([
       { id: "1", nickname: "maya", text: "hello", sentAt: 1 },

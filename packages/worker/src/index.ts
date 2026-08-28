@@ -5,6 +5,16 @@ import type { Assignment, Env } from "./types.js";
 
 export { ChatRoom, Matchmaker };
 
+function roomStub(env: Env, code: string) {
+  if (code === "development") {
+    return env.ROOMS.get(env.ROOMS.idFromName("development"));
+  }
+  if (validRoomCode(code)) {
+    return env.ROOMS.get(env.ROOMS.idFromName(`invite:${code}`));
+  }
+  return env.ROOMS.get(env.ROOMS.idFromString(code));
+}
+
 export default {
   async fetch(request: Request, env: Env): Promise<Response> {
     const url = new URL(request.url);
@@ -41,15 +51,9 @@ export default {
         : "matchmaker";
     let assignment: Assignment;
     if (development) {
-      assignment = {
-        room: env.ROOMS.idFromName("development").toString(),
-        session,
-      };
+      assignment = { room: "development", session };
     } else if (invite !== null) {
-      assignment = {
-        room: env.ROOMS.idFromName(`invite:${invite}`).toString(),
-        session,
-      };
+      assignment = { room: invite, session };
     } else {
       const matched = await matcher.fetch("https://matchmaker/assign", {
         method: "POST",
@@ -58,8 +62,7 @@ export default {
       if (!matched.ok) return matched;
       assignment = await matched.json<Assignment>();
     }
-    const room = env.ROOMS.get(env.ROOMS.idFromString(assignment.room));
-    const response = await room.fetch(request, {
+    const response = await roomStub(env, assignment.room).fetch(request, {
       headers: {
         ...Object.fromEntries(request.headers),
         "X-Omeglecode-Nickname": nickname,

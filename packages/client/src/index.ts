@@ -4,19 +4,13 @@ import {
   type ChatMessage,
 } from "@omeglecode/protocol";
 
+export { inviteCode } from "@omeglecode/protocol";
+
 export const DEFAULT_ENDPOINT =
   "wss://omeglecode.tanishqkancharla3.workers.dev/connect";
 
-const inviteAlphabet = "abcdefghijkmnopqrstuvwxyz23456789";
-
 export function normalizeEndpoint(value: string): string {
   return value.replace(/^http:/, "ws:").replace(/^https:/, "wss:");
-}
-
-export function inviteCode(): string {
-  return Array.from(crypto.getRandomValues(new Uint8Array(10)), (value) =>
-    inviteAlphabet.charAt(value % inviteAlphabet.length),
-  ).join("");
 }
 
 export async function sessionHash(sessionID: string): Promise<string> {
@@ -40,6 +34,7 @@ export type ChatStatus =
 export type Chat = {
   messages: () => ChatMessage[];
   online: () => number;
+  room: () => string;
   status: () => string;
   subscribe: (subscriber: () => void) => () => void;
   connect: (
@@ -60,6 +55,7 @@ export function createChat(options: CreateChatOptions): Chat {
   const state = {
     messages: [] as ChatMessage[],
     online: 0,
+    room: "",
     status: "choose a nickname",
   };
   let socket: WebSocket | undefined;
@@ -73,6 +69,7 @@ export function createChat(options: CreateChatOptions): Chat {
   return {
     messages: () => state.messages,
     online: () => state.online,
+    room: () => state.room,
     status: () => state.status,
     subscribe(subscriber: () => void) {
       subscribers.add(subscriber);
@@ -85,6 +82,7 @@ export function createChat(options: CreateChatOptions): Chat {
       change((draft) => {
         draft.messages = [];
         draft.online = 0;
+        draft.room = room ?? "";
         draft.status = "connecting";
       });
 
@@ -110,6 +108,7 @@ export function createChat(options: CreateChatOptions): Chat {
             change((draft) => {
               draft.messages = event.history;
               draft.online = event.online;
+              draft.room = event.room;
             });
           }
           if (event.type === "message") {

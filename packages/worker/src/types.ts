@@ -12,6 +12,7 @@ export type SocketData = {
   label: string;
   managed: boolean;
   nickname: string;
+  room: string;
   session: string;
   sent: number[];
 };

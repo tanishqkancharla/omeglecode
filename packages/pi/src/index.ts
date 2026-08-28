@@ -1,8 +1,13 @@
-import type { ExtensionAPI, ExtensionContext, Theme } from "@earendil-works/pi-coding-agent";
-import type { TUI } from "@earendil-works/pi-tui";
+import {
+  CustomEditor,
+  type ExtensionAPI,
+  type ExtensionContext,
+  type Theme,
+} from "@earendil-works/pi-coding-agent";
+import { matchesKey, type Component, type TUI } from "@earendil-works/pi-tui";
 import { createChat, inviteCode } from "@omeglecode/client";
 import { validNickname, validRoomCode } from "@omeglecode/protocol";
-import { OmegleFocus } from "./focus.js";
+import { sendingStatus } from "./chrome.js";
 import { InviteDialog } from "./invite.js";
 import {
   cycleDensity,
@@ -19,7 +24,9 @@ export default function omeglecode(pi: ExtensionAPI) {
   let activeCtx: ExtensionContext | undefined;
   let sessionID: string | undefined;
   let disconnect: (() => void) | undefined;
-  let focusOpen = false;
+  let sendMode = false;
+  let unbindEscape: (() => void) | undefined;
+  let unbindSendStatus: (() => void) | undefined;
   const settings: Settings = loadSettings();
   const hallway: Hallway = {
     chat: createChat({
@@ -62,11 +69,65 @@ export default function omeglecode(pi: ExtensionAPI) {
     );
   };
 
+  const currentRoom = () => hallway.chat.room() || settings.room;
+
+  const statusText = (ctx: ExtensionContext) => {
+    const label = sendingStatus(currentRoom());
+    return ctx.ui.theme?.fg("accent", label) ?? label;
+  };
+
+  const refreshSendStatus = (ctx: ExtensionContext) => {
+    if (!ctx.hasUI || !sendMode) return;
+    ctx.ui.setStatus?.(WIDGET_ID, statusText(ctx));
+  };
+
+  const exitSendMode = (ctx: ExtensionContext) => {
+    if (!sendMode) return;
+    sendMode = false;
+    unbindSendStatus?.();
+    unbindSendStatus = undefined;
+    if (ctx.hasUI) ctx.ui.setStatus?.(WIDGET_ID, undefined);
+  };
+
+  const enterSendMode = (ctx: ExtensionContext) => {
+    sendMode = true;
+    unbindSendStatus?.();
+    unbindSendStatus = hallway.chat.subscribe(() => refreshSendStatus(ctx));
+  };
+
+  const wrapEditor = (inner: Component, ctx: ExtensionContext): Component => {
+    const original = inner.handleInput?.bind(inner);
+    inner.handleInput = (data: string) => {
+      if (sendMode && matchesKey(data, "escape")) {
+        exitSendMode(ctx);
+        return;
+      }
+      original?.(data);
+    };
+    return inner;
+  };
+
+  const bindEscape = (ctx: ExtensionContext) => {
+    unbindEscape?.();
+    unbindEscape = undefined;
+    if (!ctx.hasUI || typeof ctx.ui.setEditorComponent !== "function") return;
+    const previous = ctx.ui.getEditorComponent?.();
+    ctx.ui.setEditorComponent((tui, theme, keybindings) =>
+      wrapEditor(
+        previous
+          ? previous(tui, theme, keybindings)
+          : new CustomEditor(tui, theme, keybindings),
+        ctx,
+      ),
+    );
+    unbindEscape = () => ctx.ui.setEditorComponent(previous);
+  };
+
   const ensureNickname = async (ctx: ExtensionContext): Promise<boolean> => {
     if (settings.nickname) return true;
     const raw = await ctx.ui.input(
       "Choose your Omeglecode nickname",
-      "2–20 letters, numbers, spaces, dots, dashes, or underscores",
+      "2–20 chars. Agents prefix the name with [ai], like [ai] wes",
     );
     const value = raw?.trim() ?? "";
     if (!validNickname(value)) {
@@ -84,11 +145,18 @@ export default function omeglecode(pi: ExtensionAPI) {
 
   const invite = async (ctx: ExtensionContext) => {
     if (!(await ensureNickname(ctx))) return;
-    if (!settings.room) {
+    const assigned = currentRoom();
+    if (!settings.room && validRoomCode(assigned)) {
+      settings.room = assigned;
+      persist();
+      showWidget(ctx);
+      refreshSendStatus(ctx);
+    } else if (!settings.room) {
       settings.room = inviteCode();
       persist();
       connect();
       showWidget(ctx);
+      refreshSendStatus(ctx);
     }
     const room = settings.room;
     await ctx.ui.custom<void>(
@@ -101,35 +169,14 @@ export default function omeglecode(pi: ExtensionAPI) {
     );
   };
 
-  const openFocus = async (ctx: ExtensionContext) => {
-    if (!ctx.hasUI || focusOpen) return;
-    if (!(await ensureNickname(ctx))) return;
-    focusOpen = true;
-    try {
-      await ctx.ui.custom<void>(
-        (tui: TUI, theme: Theme, _kb, done) =>
-          new OmegleFocus(
-            tui,
-            theme,
-            hallway.chat,
-            settings.nickname,
-            settings.room,
-            () => done(),
-          ),
-        {
-          overlay: true,
-          overlayOptions: {
-            anchor: "bottom-center",
-            width: "100%",
-            maxHeight: 14,
-            margin: { bottom: 5 },
-          },
-        },
-      );
-    } finally {
-      focusOpen = false;
-      showWidget(ctx);
+  const toggleSendMode = async (ctx: ExtensionContext) => {
+    if (!ctx.hasUI) return;
+    if (sendMode) {
+      exitSendMode(ctx);
+      return;
     }
+    if (!(await ensureNickname(ctx))) return;
+    enterSendMode(ctx);
   };
 
   pi.on("session_start", async (_event, ctx) => {
@@ -137,10 +184,13 @@ export default function omeglecode(pi: ExtensionAPI) {
     sessionID = await piSessionKey(ctx.cwd, ctx.sessionManager.getSessionFile());
     connect();
     showWidget(ctx);
+    bindEscape(ctx);
   });
 
   pi.on("session_shutdown", (_event, ctx) => {
     if (activeCtx !== ctx) return;
+    exitSendMode(ctx);
+    unbindEscape = undefined;
     if (ctx.hasUI) ctx.ui.setWidget(WIDGET_ID, undefined);
     disconnect?.();
     disconnect = undefined;
@@ -148,9 +198,19 @@ export default function omeglecode(pi: ExtensionAPI) {
     sessionID = undefined;
   });
 
+  pi.on("input", (event, ctx) => {
+    if (!sendMode) return;
+    if (event.source === "extension") return;
+    const text = event.text.trim();
+    if (text && !hallway.chat.send(text)) {
+      ctx.ui.notify("Could not send that message", "warning");
+    }
+    return { action: "handled" as const };
+  });
+
   pi.registerShortcut("ctrl+shift+m", {
-    description: "Focus the Omeglecode hallway input",
-    handler: (ctx) => openFocus(ctx),
+    description: "Send the next prompt to the Omeglecode room",
+    handler: (ctx) => toggleSendMode(ctx),
   });
 
   pi.registerShortcut("ctrl+shift+c", {
@@ -176,7 +236,7 @@ export default function omeglecode(pi: ExtensionAPI) {
     handler: async (_args, ctx) => {
       const raw = await ctx.ui.input(
         "Choose your Omeglecode nickname",
-        settings.nickname || "2–20 letters, numbers, spaces, dots, dashes, or underscores",
+        settings.nickname || "2–20 chars. Agents prefix the name with [ai], like [ai] wes",
       );
       if (raw === undefined) return;
       const value = raw.trim();
@@ -204,6 +264,7 @@ export default function omeglecode(pi: ExtensionAPI) {
       persist();
       connect();
       showWidget(ctx);
+      refreshSendStatus(ctx);
       ctx.ui.notify(`Connected to Omegle room ${value}`, "info");
     },
   });
