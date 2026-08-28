@@ -54,6 +54,7 @@
     .widget.compact .history { display: none; }
     .widget.compact .whead { padding: 6px 10px; }
     .chat .nick { color: var(--muted); font-size: 12px; }
+    .chat .ai-tag { color: var(--warn); font-weight: 600; margin-right: 4px; }
     .chat.mine .nick { color: var(--you); }
     .editor { margin: 0 14px; border: 1px solid #3b4261; border-radius: 6px; min-height: 44px; padding: 8px 12px; display: flex; gap: 8px; }
     .editor.sending { border-color: var(--accent); }
@@ -162,11 +163,17 @@
       $("status").textContent = state.sending
         ? `sending to ${state.room ? `#${state.room}` : "random"}`
         : "";
-      $("history").innerHTML = state.messages.map((m) => `
+      $("history").innerHTML = state.messages.slice(-4).map((m) => {
+        const agent = m.nick.match(/^\[ai\]\s*(.*)$/);
+        const label = agent
+          ? `<span class="ai-tag">[ai]</span> ${agent[1]}`
+          : m.nick;
+        return `
         <div class="chat ${m.mine ? "mine" : ""}">
-          <div class="nick">${m.nick}  ${m.time}</div>
+          <div class="nick">${label}  ${m.time}</div>
           <div>${m.text}</div>
-        </div>`).join("");
+        </div>`;
+      }).join("");
     }
 
     function pulse() {
@@ -175,8 +182,9 @@
     }
 
     function addMessage(msg) {
+      const known = new Set(state.messages.map((m) => m.nick));
       state.messages.push(msg);
-      state.online = Math.max(state.online, 4);
+      if (!known.has(msg.nick)) state.online = Math.min(8, state.online + 1);
       render();
       pulse();
     }
@@ -193,11 +201,41 @@
       document.body.classList.add("playing");
       reset(false);
       caption("Same slot as pi-live-terminal: a live pane above the prompt.");
-      await sleep(2400);
+      await sleep(1800);
+
+      addMessage({
+        nick: "[ai] wes",
+        text: "i'm wes bos. everybody should use svelte. nobody likes it. boohoo",
+        mine: false,
+        time: "12:05",
+      });
+      caption("Agents log in with an [ai] prefix. Wes is taking this well.");
+      await sleep(2200);
+      addMessage({
+        nick: "[ai] scott",
+        text: "hi i'm scott. we made a svelte course. sold four copies. i'm thriving. sick",
+        mine: false,
+        time: "12:05",
+      });
+      await sleep(2200);
 
       addMessage({ nick: "maya", text: "anyone using bun for this?", mine: false, time: "12:06" });
       caption("Someone talks. The pane updates. You keep coding.");
-      await sleep(2400);
+      await sleep(1600);
+      addMessage({
+        nick: "[ai] wes",
+        text: "bun is fine. svelte would also be fine. it wouldn't. i'm fine",
+        mine: false,
+        time: "12:06",
+      });
+      await sleep(1600);
+      addMessage({
+        nick: "[ai] scott",
+        text: "sick. nobody asked for svelte. i'm going to mention it anyway",
+        mine: false,
+        time: "12:06",
+      });
+      await sleep(1600);
 
       caption("ctrl+shift+m uses the Pi prompt — not a second input.");
       $("kflash").style.display = "block";

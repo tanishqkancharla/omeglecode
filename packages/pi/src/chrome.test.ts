@@ -1,3 +1,4 @@
+import { splitAiNickname, validNickname } from "@omeglecode/protocol";
 import { describe, expect, test } from "vitest";
 import {
   bodyRows,
@@ -109,6 +110,34 @@ describe("hallway chrome", () => {
     ]);
   });
 
+  test("highlights the [ai] nickname prefix", () => {
+    const tagged = {
+      fg: (name: string, text: string) =>
+        name === "warning" ? `[${text}]` : text,
+    };
+    const lines = historyLines(
+      [{ nickname: "[ai] wes", text: "boohoo svelte", sentAt: 0 }],
+      "connected",
+      "kai",
+      tagged,
+    );
+    expect(lines[0]).toContain("[[ai]]");
+    expect(lines[0]).toContain("wes");
+    expect(lines[1]).toBe("boohoo svelte");
+  });
+
+  test("accepts agent nicknames with an [ai] prefix", () => {
+    expect(validNickname("maya")).toBe(true);
+    expect(validNickname("[ai] wes")).toBe(true);
+    expect(validNickname("[ai] scott")).toBe(true);
+    expect(validNickname("[ai] Wes Bos")).toBe(true);
+    expect(validNickname("[ai]wes")).toBe(false);
+    expect(splitAiNickname("[ai] wes")).toEqual({
+      prefix: "[ai]",
+      name: "wes",
+    });
+    expect(splitAiNickname("maya")).toBeUndefined();
+  });
   test("invite card tells both hosts to use the same command", () => {
     const card = renderInviteCard(56, "weekend-test", plainTheme).join("\n");
     expect(card).toContain("/omegle-connect weekend-test");

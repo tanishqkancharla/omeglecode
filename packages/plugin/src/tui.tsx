@@ -154,7 +154,7 @@ const plugin: Plugin.Definition = {
       const raw = await context.ui.dialog.prompt({
         title: "Choose your Omeglecode nickname",
         description:
-          "2–20 letters, numbers, spaces, dots, dashes, or underscores",
+          "2–20 chars. Agents prefix the name with [ai], like [ai] wes",
         value: settings.nickname,
       });
       if (raw === undefined) return;

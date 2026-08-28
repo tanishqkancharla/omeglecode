@@ -29,8 +29,20 @@ function json(value: string): unknown {
   }
 }
 
+const humanNick = /^[a-zA-Z0-9_][a-zA-Z0-9_. -]{1,19}$/;
+const agentNick = /^\[ai\] [a-zA-Z0-9_][a-zA-Z0-9_. -]{0,14}$/;
+
 export function validNickname(value: string): boolean {
-  return /^[a-zA-Z0-9_][a-zA-Z0-9_. -]{1,19}$/.test(value);
+  return humanNick.test(value) || agentNick.test(value);
+}
+
+export function splitAiNickname(
+  value: string,
+): { prefix: "[ai]"; name: string } | undefined {
+  if (!value.startsWith("[ai] ")) return;
+  const name = value.slice("[ai] ".length);
+  if (!name) return;
+  return { prefix: "[ai]", name };
 }
 
 export function validRoomCode(value: string): boolean {

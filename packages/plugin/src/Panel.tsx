@@ -6,6 +6,7 @@ import type {
   TextareaRenderable,
   TextRenderable,
 } from "@opentui/core";
+import { splitAiNickname } from "@omeglecode/protocol";
 import { Show, createEffect, onCleanup, onMount } from "solid-js";
 import type { Chat } from "./Chat.js";
 
@@ -43,14 +44,26 @@ export function Panel(props: {
       const messages = props.chat.messages();
       transcript.content = messages.length
         ? new StyledText(
-            messages.flatMap((message, index) => [
-              fg(theme().text.subdued)(
-                `${message.nickname} ${time(message.sentAt)}\n`,
-              ),
-              fg(theme().text.default)(
-                `${message.text}${index === messages.length - 1 ? "" : "\n\n"}`,
-              ),
-            ]),
+            messages.flatMap((message, index) => {
+              const agent = splitAiNickname(message.nickname);
+              const stamp = time(message.sentAt);
+              const nick = agent
+                ? [
+                    fg(theme().text.feedback.warning.default)(`${agent.prefix} `),
+                    fg(theme().text.subdued)(`${agent.name} ${stamp}\n`),
+                  ]
+                : [
+                    fg(theme().text.subdued)(
+                      `${message.nickname} ${stamp}\n`,
+                    ),
+                  ];
+              return [
+                ...nick,
+                fg(theme().text.default)(
+                  `${message.text}${index === messages.length - 1 ? "" : "\n\n"}`,
+                ),
+              ];
+            }),
           )
         : new StyledText([
             fg(theme().text.subdued)(props.chat.status()),

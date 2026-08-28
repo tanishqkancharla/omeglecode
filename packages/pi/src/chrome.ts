@@ -1,3 +1,5 @@
+import { splitAiNickname } from "@omeglecode/protocol";
+
 export type Theme = {
   fg: (name: string, text: string) => string;
 };
@@ -71,8 +73,12 @@ export function historyLines(
   if (!messages.length) return [theme.fg("muted", status)];
   const lines: string[] = [];
   for (const message of messages) {
+    const stamp = formatTime(message.sentAt);
+    const agent = splitAiNickname(message.nickname);
     lines.push(
-      theme.fg("muted", `${message.nickname}  ${formatTime(message.sentAt)}`),
+      agent
+        ? `${theme.fg("warning", agent.prefix)} ${theme.fg("muted", `${agent.name}  ${stamp}`)}`
+        : theme.fg("muted", `${message.nickname}  ${stamp}`),
     );
     lines.push(theme.fg("text", message.text));
   }

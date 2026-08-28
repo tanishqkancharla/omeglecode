@@ -121,7 +121,7 @@ export default function omeglecode(pi: ExtensionAPI) {
     if (settings.nickname) return true;
     const raw = await ctx.ui.input(
       "Choose your Omeglecode nickname",
-      "2–20 letters, numbers, spaces, dots, dashes, or underscores",
+      "2–20 chars. Agents prefix the name with [ai], like [ai] wes",
     );
     const value = raw?.trim() ?? "";
     if (!validNickname(value)) {
@@ -224,7 +224,7 @@ export default function omeglecode(pi: ExtensionAPI) {
     handler: async (_args, ctx) => {
       const raw = await ctx.ui.input(
         "Choose your Omeglecode nickname",
-        settings.nickname || "2–20 letters, numbers, spaces, dots, dashes, or underscores",
+        settings.nickname || "2–20 chars. Agents prefix the name with [ai], like [ai] wes",
       );
       if (raw === undefined) return;
       const value = raw.trim();
