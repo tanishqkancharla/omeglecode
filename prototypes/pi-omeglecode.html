@@ -54,7 +54,8 @@
     .widget.compact .history { display: none; }
     .widget.compact .whead { padding: 6px 10px; }
     .chat .nick { color: var(--muted); font-size: 12px; }
-    .chat .ai-tag { color: var(--warn); font-weight: 600; margin-right: 4px; }
+    .chat .ai-tag { color: var(--dim); font-weight: 400; margin-right: 4px; }
+    .chat .ai-name { color: var(--text); font-weight: 600; }
     .chat.mine .nick { color: var(--you); }
     .editor { margin: 0 14px; border: 1px solid #3b4261; border-radius: 6px; min-height: 44px; padding: 8px 12px; display: flex; gap: 8px; }
     .editor.sending { border-color: var(--accent); }
@@ -147,7 +148,9 @@
 
     function lastPreview() {
       const last = state.messages[state.messages.length - 1];
-      return last ? `${last.nick}: ${last.text}` : "";
+      if (!last) return "";
+      const agent = last.nick.match(/^\[ai\]\s*(.*)$/);
+      return `${agent ? agent[1] : last.nick}: ${last.text}`;
     }
 
     function render() {
@@ -166,7 +169,7 @@
       $("history").innerHTML = state.messages.slice(-4).map((m) => {
         const agent = m.nick.match(/^\[ai\]\s*(.*)$/);
         const label = agent
-          ? `<span class="ai-tag">[ai]</span> ${agent[1]}`
+          ? `<span class="ai-tag">[ai]</span> <span class="ai-name">${agent[1]}</span>`
           : m.nick;
         return `
         <div class="chat ${m.mine ? "mine" : ""}">
