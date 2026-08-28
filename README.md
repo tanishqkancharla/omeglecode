@@ -74,6 +74,8 @@ npm exec --yes --package=@opencode-ai/cli@beta -- opencode2
 
 ## Deploy
 
+Production deploys go through Alchemy (`pnpm infra:deploy`). Wrangler is what `pnpm dev` and worker tests use locally.
+
 Log in to Alchemy, then deploy the Worker and both Durable Object namespaces:
 
 ```sh
@@ -82,3 +84,33 @@ pnpm infra:deploy
 ```
 
 `alchemy.run.ts` owns the Worker URL and Durable Object migrations. The service receives only a user-chosen nickname, a one-way hash of the host session, presence, and chat messages.
+
+### Live dashboard
+
+`GET /live` is a Maui-styled live view of production joins, messages, and estimated Durable Object cost. The page polls `GET /live/data` every 8 seconds.
+
+Joins are lifetime successful WebSocket 101 accepts — reconnects count again — not unique people and not currently online. Messages are delivered chat lines stored in room history. Totals only go up and match the per-room counters from `GET /stats`.
+
+Durable Object cost (Matchmaker + ChatRoom on worker `omeglecode`) comes from Cloudflare GraphQL Analytics. It is an estimate using Workers Paid rates, labeled as such. If the analytics secret is missing, joins and messages still update and the cost section shows an unavailable state.
+
+Set a token with **Account Analytics read** as a Worker secret. Do not put the token in client JS, HTML, or git.
+
+```sh
+# Local wrangler (packages/worker/.dev.vars, gitignored):
+# CLOUDFLARE_API_TOKEN=...
+# CLOUDFLARE_ACCOUNT_ID=...   # optional; discovered via GraphQL if omitted
+
+# Production: export the secret in the environment that runs Alchemy, then deploy.
+# CLOUDFLARE_ANALYTICS_TOKEN is preferred; CLOUDFLARE_API_TOKEN is the fallback name.
+# Optional: CLOUDFLARE_ACCOUNT_ID if the token can see more than one account.
+pnpm infra:deploy
+```
+
+Or, for a Wrangler-only deploy of the same worker:
+
+```sh
+pnpm --filter @omeglecode/worker exec wrangler secret put CLOUDFLARE_API_TOKEN
+pnpm --filter @omeglecode/worker deploy
+```
+
+The account id is not hardcoded. Alchemy binds `CLOUDFLARE_ACCOUNT_ID` when that env var is set at deploy time; otherwise the worker asks GraphQL `viewer.accounts`. The script name is `omeglecode` from `wrangler.jsonc` / `alchemy.run.ts`.

@@ -4,18 +4,26 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "build": "wrangler deploy --dry-run",
-    "check": "tsc --noEmit",
-    "deploy": "wrangler deploy",
-    "dev": "wrangler dev",
-    "test": "vitest run"
+    "build": "pnpm build:live && wrangler deploy --dry-run",
+    "build:live": "node scripts/build-live.mjs",
+    "check": "pnpm build:live && tsc --noEmit && tsc --noEmit -p live/tsconfig.json",
+    "deploy": "pnpm build:live && wrangler deploy",
+    "dev": "pnpm build:live && wrangler dev",
+    "test": "pnpm build:live && vitest run"
   },
   "dependencies": {
-    "@omeglecode/protocol": "workspace:*"
+    "@omeglecode/protocol": "workspace:*",
+    "maui": "npm:@tanishqkancharla/maui@0.0.3",
+    "purse-styles": "^0.2.1",
+    "react": "^19.2.7",
+    "react-dom": "^19.2.7"
   },
   "devDependencies": {
     "@cloudflare/vitest-pool-workers": "latest",
     "@cloudflare/workers-types": "latest",
+    "@types/react": "^19.2.17",
+    "@types/react-dom": "^19.2.3",
+    "esbuild": "^0.28.0",
     "typescript": "^5.9.2",
     "vitest": "latest",
     "wrangler": "latest"

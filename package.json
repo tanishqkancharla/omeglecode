@@ -7,8 +7,8 @@
     "build": "pnpm -r build",
     "check": "tsc --noEmit && pnpm -r check",
     "dev": "pnpm --filter @omeglecode/worker dev",
-    "infra:deploy": "alchemy deploy",
-    "infra:dev": "alchemy dev",
+    "infra:deploy": "pnpm --filter @omeglecode/worker build:live && alchemy deploy",
+    "infra:dev": "pnpm --filter @omeglecode/worker build:live && alchemy dev",
     "plugin:link": "sh scripts/link.sh",
     "spec": "tkstack",
     "test": "pnpm -r test"
