@@ -1,6 +1,12 @@
 #!/usr/bin/env node
 import { execFileSync } from "node:child_process";
-import { existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
+import {
+  existsSync,
+  mkdirSync,
+  readFileSync,
+  rmSync,
+  writeFileSync,
+} from "node:fs";
 import path from "node:path";
 
 if (process.argv[2] !== "install" || process.argv[3] !== undefined) {
@@ -26,6 +32,10 @@ const value = (name) => {
 
 const config = value("config");
 const cache = value("cache");
+rmSync(path.join(cache, "packages", "opencode-omeglecode"), {
+  recursive: true,
+  force: true,
+});
 execFileSync("opencode2", ["plugin", "add", "opencode-omeglecode"], {
   stdio: "inherit",
 });
