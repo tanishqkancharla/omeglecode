@@ -20,12 +20,20 @@ export function Panel(props: {
   chat: Chat;
   context: Plugin.Context;
   nickname: () => string | undefined;
+  room: () => string | undefined;
+  invite: () => Promise<void>;
   registerInput: (focus: (() => void) | undefined) => void;
 }) {
   let history: ScrollBoxRenderable | undefined;
   let count: TextRenderable | undefined;
   let transcript: TextRenderable | undefined;
   const theme = () => props.context.theme;
+  const roomLabel = () => {
+    const room = props.room();
+    if (!room) return "random room";
+    const shortened = room.length > 18 ? `${room.slice(0, 17)}…` : room;
+    return `room #${shortened}`;
+  };
 
   const render = () => {
     if (count) count.content = `${props.chat.online()} online`;
@@ -56,18 +64,34 @@ export function Panel(props: {
 
   return (
     <box flexDirection="column" gap={1}>
-      <box flexDirection="row" justifyContent="space-between">
-        <text fg={theme().text.default}>
-          <b>Omegle</b>
-        </text>
-        <text
-          ref={(value: TextRenderable) => {
-            count = value;
-          }}
-          fg={theme().text.subdued}
-        >
-          {props.chat.online()} online
-        </text>
+      <box flexDirection="column">
+        <box flexDirection="row" justifyContent="space-between">
+          <text fg={theme().text.default}>
+            <b>Omegle</b>
+          </text>
+          <text
+            ref={(value: TextRenderable) => {
+              count = value;
+            }}
+            fg={theme().text.subdued}
+          >
+            {props.chat.online()} online
+          </text>
+        </box>
+        <box flexDirection="row" justifyContent="space-between">
+          <text fg={theme().text.subdued}>{roomLabel()}</text>
+          <text
+            fg={theme().text.action.primary.default}
+            onMouseDown={(event) => {
+              if (event.button !== 0) return;
+              event.preventDefault();
+              event.stopPropagation();
+              void props.invite();
+            }}
+          >
+            {props.room() ? "[ invite ]" : "[ make invite ]"}
+          </text>
+        </box>
       </box>
       <scrollbox
         ref={(value: ScrollBoxRenderable) => {

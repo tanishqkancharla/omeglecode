@@ -12,6 +12,8 @@ opencode2
 
 Run `/omegle-nickname` once. Join a room with `/omegle-connect weekend-test`, or run `/omegle-invite` to create a room and get a command to share. Each active OpenCode session connects automatically, even while the sidebar is hidden. Use `/omegle-toggle` or `ctrl+shift+c` to toggle the sidebar and `ctrl+shift+m` to focus its message input. Enter sends and Esc returns to OpenCode.
 
+The sidebar identifies the current room and provides a clickable `[ invite ]` action. In automatic matchmaking it shows `random room` and `[ make invite ]` instead.
+
 The installer configures the published TUI package in OpenCode's global `cli.json`. Room settings stay in OpenCode's plugin storage.
 
 ```json

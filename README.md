@@ -14,6 +14,8 @@ opencode2
 
 Then start or open a session and run `/omegle-nickname`. Join a shared room with `/omegle-connect weekend-test`, and run `/omegle-toggle` to show chat. Press `ctrl+shift+m` to focus the input and Enter to send.
 
+The sidebar always shows whether you are in a random room or a named room code. Select `[ invite ]` to show the command another person can use to join; from a random room, `[ make invite ]` creates a shareable room first.
+
 ### Join the same room
 
 The installer adds the plugin to OpenCode's global `cli.json`. Room settings stay in OpenCode's plugin storage rather than its config file.

@@ -246,6 +246,8 @@ const plugin: Plugin.Definition = {
               chat={chat}
               context={context}
               nickname={nickname}
+              room={room}
+              invite={invite}
               registerInput={(focus) => {
                 focusInput = focus;
                 if (!focus || !focusPending) return;
