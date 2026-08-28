@@ -32,7 +32,7 @@ sequenceDiagram
 
 ## Problem overview
 
-OpenCode users work alone even when many people are using the tool at the same time. Dax's mockup proposes a small team chat inside OpenCode. Kevin's reply changes a single global room into small, unpredictable groups tied to each OpenCode session.
+OpenCode users work alone even when many people are using the tool at the same time. Dax's mockup proposes a small Omegle panel inside OpenCode. Kevin's reply changes a single global room into small, unpredictable groups tied to each OpenCode session.
 
 ## Solution overview
 
@@ -133,7 +133,7 @@ In production, the Worker sends every connection through one matchmaker object. 
 +    └── Panel → history and presence
 ```
 
-Register `/omeglecode`, `/omeglecode-nickname`, and shortcuts through the v2 keymap. A hidden session slot connects as soon as a session opens, even when the sidebar is hidden. The message shortcut opens the sidebar when needed and focuses its inline input.
+Register `/omegle-toggle`, `/omegle-nickname`, `/omegle-connect`, `/omegle-invite`, and shortcuts through the v2 keymap. A hidden session slot connects as soon as a session opens, even when the sidebar is hidden. The message shortcut opens the sidebar when needed and focuses its inline input.
 
 ```diff:packages/plugin/src/tui.tsx
 +context.ui.slot({

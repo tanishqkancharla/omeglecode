@@ -9,10 +9,18 @@ const key = "omeglecode.settings";
 const defaultEndpoint =
   "wss://omeglecode.tanishqkancharla3.workers.dev/connect";
 
+function inviteCode(): string {
+  const alphabet = "abcdefghijkmnopqrstuvwxyz23456789";
+  return Array.from(crypto.getRandomValues(new Uint8Array(10)), (value) =>
+    alphabet.charAt(value % alphabet.length),
+  ).join("");
+}
+
 function Commands(props: {
   context: Plugin.Context;
-  nickname: () => string | undefined;
   chooseNickname: () => Promise<void>;
+  connectRoom: (input?: string) => Promise<void>;
+  invite: () => Promise<void>;
   focusInput: () => Promise<void>;
 }) {
   props.context.keymap.layer(() => ({
@@ -23,7 +31,7 @@ function Commands(props: {
         title: "Toggle Omeglecode",
         group: "Omeglecode",
         palette: true,
-        slash: { name: "omeglecode" },
+        slash: { name: "omegle-toggle" },
         bind: "ctrl+shift+c",
         run: () => props.context.keymap.dispatch("session.sidebar.toggle"),
       },
@@ -40,9 +48,27 @@ function Commands(props: {
         title: "Change Omeglecode nickname",
         group: "Omeglecode",
         palette: true,
-        slash: { name: "omeglecode-nickname" },
+        slash: { name: "omegle-nickname" },
         bind: false,
         run: props.chooseNickname,
+      },
+      {
+        id: "omeglecode.connect",
+        title: "Connect to an Omegle room",
+        group: "Omeglecode",
+        palette: true,
+        slash: { name: "omegle-connect", arguments: true },
+        bind: false,
+        run: props.connectRoom,
+      },
+      {
+        id: "omeglecode.invite",
+        title: "Invite someone to this Omegle room",
+        group: "Omeglecode",
+        palette: true,
+        slash: { name: "omegle-invite" },
+        bind: false,
+        run: props.invite,
       },
     ],
     bindings: ["omeglecode.toggle", "omeglecode.focus"],
@@ -84,10 +110,14 @@ const plugin: Plugin.Definition = {
         ? context.options.nickname
         : "";
     const [settings, setSettings] = context.storage.store(key, {
-      initial: { nickname: initialNickname },
+      initial: {
+        nickname: initialNickname,
+        room: configuredRoom === undefined ? "" : configuredRoom,
+      },
     });
     const nickname = () => settings.nickname || undefined;
-    const chat = createChat(context, endpoint, configuredRoom);
+    const room = () => settings.room || undefined;
+    const chat = createChat(context, endpoint);
     let focusInput: (() => void) | undefined;
     let focusPending = false;
     let activeSession: string | undefined;
@@ -95,7 +125,7 @@ const plugin: Plugin.Definition = {
 
     const connect = (sessionID: string, value: string) => {
       disconnect?.();
-      disconnect = chat.connect(sessionID, value);
+      disconnect = chat.connect(sessionID, value, room());
     };
 
     const activate = (sessionID: string) => {
@@ -132,11 +162,52 @@ const plugin: Plugin.Definition = {
       if (activeSession) connect(activeSession, value);
     };
 
-    const focusChat = async () => {
-      if (!nickname()) {
-        await chooseNickname();
-        if (!nickname()) return;
+    const ensureNickname = async () => {
+      if (nickname()) return true;
+      await chooseNickname();
+      return Boolean(nickname());
+    };
+
+    const connectRoom = async (input?: string) => {
+      const value = input?.trim();
+      if (!value || !validRoomCode(value)) {
+        context.ui.toast.show({
+          variant: "warning",
+          message: "Usage: /omegle-connect ROOM_ID",
+        });
+        return;
       }
+      if (!(await ensureNickname())) return;
+      await setSettings((draft) => {
+        draft.room = value;
+      });
+      const name = nickname();
+      if (activeSession && name) connect(activeSession, name);
+      context.ui.toast.show({
+        variant: "success",
+        message: `Connected to Omegle room ${value}`,
+      });
+    };
+
+    const invite = async () => {
+      if (!(await ensureNickname())) return;
+      let value = room();
+      if (!value) {
+        value = inviteCode();
+        await setSettings((draft) => {
+          draft.room = value;
+        });
+        const name = nickname();
+        if (activeSession && name) connect(activeSession, name);
+      }
+      await context.ui.dialog.alert({
+        title: "Invite to Omegle",
+        message: `Room: ${value}\n\nAsk them to run:\n/omegle-connect ${value}`,
+      });
+    };
+
+    const focusChat = async () => {
+      if (!(await ensureNickname())) return;
       if (!focusInput) {
         focusPending = true;
         context.keymap.dispatch("session.sidebar.toggle");
@@ -151,8 +222,9 @@ const plugin: Plugin.Definition = {
         return (
           <Commands
             context={context}
-            nickname={nickname}
             chooseNickname={chooseNickname}
+            connectRoom={connectRoom}
+            invite={invite}
             focusInput={focusChat}
           />
         );
@@ -165,8 +237,9 @@ const plugin: Plugin.Definition = {
           <box flexDirection="column">
             <Commands
               context={context}
-              nickname={nickname}
               chooseNickname={chooseNickname}
+              connectRoom={connectRoom}
+              invite={invite}
               focusInput={focusChat}
             />
             <Panel
@@ -197,8 +270,9 @@ const plugin: Plugin.Definition = {
           <box visible={false}>
             <Commands
               context={context}
-              nickname={nickname}
               chooseNickname={chooseNickname}
+              connectRoom={connectRoom}
+              invite={invite}
               focusInput={focusChat}
             />
             <Connection

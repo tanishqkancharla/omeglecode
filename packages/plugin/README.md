@@ -1,25 +1,25 @@
 # opencode-omeglecode
 
-Anonymous, session-shuffled team chat for the OpenCode v2 sidebar.
+Anonymous, session-shuffled chat for the OpenCode v2 sidebar.
 
 Install the OpenCode v2 preview and Omeglecode:
 
 ```sh
 npm install --global @opencode-ai/cli@beta
-npx --yes opencode-omeglecode@latest weekend-test
+npx --yes opencode-omeglecode@latest install
 opencode2
 ```
 
-Run `/omeglecode-nickname` once. Each active OpenCode session then connects automatically, even while the sidebar is hidden. Use `/omeglecode` or `ctrl+shift+c` to toggle the sidebar and `ctrl+shift+m` to focus its message input. Enter sends and Esc returns to OpenCode.
+Run `/omegle-nickname` once. Join a room with `/omegle-connect weekend-test`, or run `/omegle-invite` to create a room and get a command to share. Each active OpenCode session connects automatically, even while the sidebar is hidden. Use `/omegle-toggle` or `ctrl+shift+c` to toggle the sidebar and `ctrl+shift+m` to focus its message input. Enter sends and Esc returns to OpenCode.
 
-The installer configures the published TUI package and shared room in OpenCode's global `cli.json`. Run it again with a different code to change rooms.
+The installer configures the published TUI package in OpenCode's global `cli.json`. Room settings stay in OpenCode's plugin storage.
 
 ```json
 {
   "plugins": [
     {
       "package": "/path/to/opencode-omeglecode/dist/tui.js",
-      "options": { "room": "weekend-test" }
+      "options": {}
     }
   ]
 }

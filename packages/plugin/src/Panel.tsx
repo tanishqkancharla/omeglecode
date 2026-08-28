@@ -58,7 +58,7 @@ export function Panel(props: {
     <box flexDirection="column" gap={1}>
       <box flexDirection="row" justifyContent="space-between">
         <text fg={theme().text.default}>
-          <b>Team Chat</b>
+          <b>Omegle</b>
         </text>
         <text
           ref={(value: TextRenderable) => {
@@ -143,7 +143,7 @@ export function Input(props: {
         when={nickname()}
         fallback={
           <text fg={theme().text.feedback.warning.default}>
-            Run /omeglecode-nickname to join
+            Run /omegle-nickname to join
           </text>
         }
       >

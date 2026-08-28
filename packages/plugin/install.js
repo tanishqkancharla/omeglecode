@@ -3,11 +3,8 @@ import { execFileSync } from "node:child_process";
 import { existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import path from "node:path";
 
-const room = process.argv[2];
-if (room !== undefined && !/^[a-zA-Z0-9][a-zA-Z0-9_-]{2,31}$/.test(room)) {
-  console.error(
-    "Room codes must be 3–32 letters, numbers, dashes, or underscores.",
-  );
+if (process.argv[2] !== "install" || process.argv[3] !== undefined) {
+  console.error("Usage: npx --yes opencode-omeglecode@latest install");
   process.exit(1);
 }
 
@@ -51,18 +48,16 @@ const current = existsSync(file)
   ? JSON.parse(readFileSync(file, "utf8"))
   : { $schema: "https://opencode.ai/v2/cli.json" };
 const plugins = Array.isArray(current.plugins) ? current.plugins : [];
-const options = room === undefined ? {} : { room };
 current.plugins = [
   ...plugins.filter((plugin) => {
     if (typeof plugin === "string")
       return !plugin.includes("opencode-omeglecode");
     return plugin?.package !== entrypoint;
   }),
-  { package: entrypoint, options },
+  { package: entrypoint, options: {} },
 ];
 writeFileSync(file, `${JSON.stringify(current, undefined, 2)}\n`);
 
-console.log(
-  `Omeglecode installed${room === undefined ? "" : ` with room ${room}`}.`,
-);
+console.log("Omeglecode installed.");
 console.log("Start OpenCode with: opencode2");
+console.log("Then join a room with: /omegle-connect ROOM_ID");

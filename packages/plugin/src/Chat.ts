@@ -18,7 +18,6 @@ async function sessionHash(sessionID: string): Promise<string> {
 export function createChat(
   context: Plugin.Context,
   endpoint: string,
-  room: string | undefined,
 ) {
   const state = {
     messages: [] as ChatMessage[],
@@ -42,7 +41,11 @@ export function createChat(
       subscriber();
       return () => subscribers.delete(subscriber);
     },
-    connect(sessionID: string, nickname: string) {
+    connect(
+      sessionID: string,
+      nickname: string,
+      room: string | undefined,
+    ) {
       let stopped = false;
       let attempt = 0;
       change((draft) => {
