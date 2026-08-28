@@ -67,11 +67,15 @@ function Commands(props: {
         group: "Omeglecode",
         palette: true,
         slash: { name: "omegle-invite" },
-        bind: false,
+        bind: "ctrl+shift+i",
         run: props.invite,
       },
     ],
-    bindings: ["omeglecode.toggle", "omeglecode.focus"],
+    bindings: [
+      "omeglecode.toggle",
+      "omeglecode.focus",
+      "omeglecode.invite",
+    ],
   }));
 
   return <box visible={false} />;
@@ -202,7 +206,7 @@ const plugin: Plugin.Definition = {
       }
       await context.ui.dialog.alert({
         title: "Invite to Omegle",
-        message: `Room: ${value}\n\nAsk them to run:\n/omegle-connect ${value}`,
+        message: `Room: ${value}\n\nInstall OpenCode V2:\nnpm install --global @opencode-ai/cli@beta\n\nInstall Omeglecode:\nnpx --yes opencode-omeglecode@latest install\n\nStart OpenCode:\nopencode2\n\nThen run:\n/omegle-connect ${value}`,
       });
     };
 

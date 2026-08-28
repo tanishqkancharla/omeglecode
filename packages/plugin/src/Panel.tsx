@@ -82,7 +82,7 @@ export function Panel(props: {
           <text fg={theme().text.subdued}>{roomLabel()}</text>
           <text
             fg={theme().text.action.primary.default}
-            onMouseDown={(event) => {
+            onMouseUp={(event) => {
               if (event.button !== 0) return;
               event.preventDefault();
               event.stopPropagation();
