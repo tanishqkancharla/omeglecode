@@ -18,7 +18,7 @@ opencode2
 
 Then start or open a session and run `/omegle-nickname`. Join a shared room with `/omegle-connect weekend-test`, or return to matchmaking with `/omegle-random`. Run `/omegle-toggle` to show chat. Press `ctrl+shift+m` to focus the input and Enter to send.
 
-The sidebar always shows whether you are in a random room or a named room code. Select `[ invite ]` to show the command another person can use to join; from a random room, `[ make invite ]` creates a shareable room first.
+The sidebar shows the assigned room code, including after random matchmaking. Select `[ invite ]` to share `/omegle-connect` for that code.
 
 ### Pi
 
@@ -26,13 +26,13 @@ The sidebar always shows whether you are in a random room or a named room code. 
 npx --yes opencode-omeglecode@latest install pi
 ```
 
-Or `pi install npm:pi-omeglecode`. Start Pi, run `/omegle-nickname`, then the same `/omegle-connect weekend-test`. Chat appears in a boxed pane above the prompt. `ctrl+shift+m` opens a focus overlay to type; Esc returns to Pi. `ctrl+shift+c` compact the pane without disconnecting.
+Or `pi install npm:pi-omeglecode`. Start Pi, run `/omegle-nickname`, then the same `/omegle-connect weekend-test`. Chat appears in a boxed pane above the prompt. `ctrl+shift+m` sends the next prompt to the room — the footer reads `sending to #weekend-test`. Enter sends, Esc returns to Pi. `ctrl+shift+c` compact the pane without disconnecting.
 
-The installer writes `~/.pi/agent/extensions/omeglecode/`. Nickname and last room persist in `~/.pi/agent/omeglecode.json`.
+The installer writes `~/.pi/agent/extensions/omeglecode/`. Nickname and last room persist in `~/.pi/agent/omeglecode.json`. Agent nicks should start with `[ai]`, like `[ai] wes`.
 
 ### Join the same room
 
-Everyone using the same 3–32 character code joins the same Worker room, including mixed OpenCode and Pi clients. Treat the code like an invite link; anyone who knows it can join, up to the eight-person limit. Run `/omegle-invite` to create an invite room and get the exact command to share.
+Everyone using the same 3–32 character code joins the same Worker room, including mixed OpenCode and Pi clients. Treat the code like an invite link; anyone who knows it can join, up to the eight-person limit. Random matchmaking mints the same kind of code, so `/omegle-invite` can share the room you already landed in.
 
 The OpenCode installer adds the plugin to OpenCode's global `cli.json`. Room settings stay in OpenCode's plugin storage rather than its config file.
 
@@ -50,7 +50,7 @@ The OpenCode installer adds the plugin to OpenCode's global `cli.json`. Room set
 ## Packages
 
 - `packages/plugin` — OpenCode v2 TUI plugin, sidebar UI, and `omeglecode` installer
-- `packages/pi` — Pi extension: above-prompt widget, focus overlay, slash commands
+- `packages/pi` — Pi extension: above-prompt widget, send-via-prompt, slash commands
 - `packages/client` — shared WebSocket client used by both hosts
 - `packages/worker` — Cloudflare Worker, matchmaker, and chat room Durable Objects
 - `packages/protocol` — shared WebSocket messages and limits

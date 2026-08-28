@@ -98,9 +98,9 @@ For hosts that can paint and take focus.
 
 Follow [pi-live-terminal](https://github.com/tanishqkancharla/pi-live-terminal), not a fake sidebar. Pi's native slot is a live pane **above the prompt** (`setWidget(..., { placement: "aboveEditor" })`).
 
-1. **Expanded (default):** boxed hallway above the editor — header, ~8 messages, shortcut footer. The Pi prompt stays focused. Transcript shrinks; nothing is covered.
+1. **Expanded (default):** boxed hallway above the editor — header and ~8 messages. The Pi prompt stays focused. Transcript shrinks; nothing is covered.
 2. **Compact:** one title line above the prompt. `ctrl+shift+c` toggles. Socket stays up.
-3. **Focus:** `ctrl+shift+m` opens a bottom overlay with an input, same as live-terminal's focus modal, but not full-screen. Esc returns to Pi.
+3. **Send:** `ctrl+shift+m` routes the existing Pi editor to the room. Footer shows `sending to #room`. Esc returns to Pi.
 4. **Session stickiness:** hash `"pi:" + session file path`.
 
 A right overlay covers the transcript and ignores the slot Pi already gives us.

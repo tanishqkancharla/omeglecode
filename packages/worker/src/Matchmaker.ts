@@ -1,4 +1,4 @@
-import { limits, validRoomCode } from "@omeglecode/protocol";
+import { inviteCode, limits, validRoomCode } from "@omeglecode/protocol";
 import type { Assignment, Env, Stats } from "./types.js";
 
 type Session = {
@@ -28,7 +28,7 @@ export async function trackEvent(
 export class Matchmaker implements DurableObject {
   constructor(
     private readonly state: DurableObjectState,
-    private readonly env: Env,
+    _env: Env,
   ) {}
 
   async fetch(request: Request): Promise<Response> {
@@ -86,8 +86,12 @@ export class Matchmaker implements DurableObject {
         ([firstKey, first], [secondKey, second]) =>
           second.count - first.count || firstKey.localeCompare(secondKey),
       );
-      const room =
-        available[0]?.[0].slice(5) ?? this.env.ROOMS.newUniqueId().toString();
+      let room = available[0]?.[0].slice(5);
+      if (!room) {
+        do {
+          room = inviteCode();
+        } while (await storage.get<Room>(`room:${room}`));
+      }
       const roomKey = `room:${room}`;
       const record = (await storage.get<Room>(roomKey)) ?? { count: 0 };
       await storage.put(roomKey, { count: record.count + 1 });

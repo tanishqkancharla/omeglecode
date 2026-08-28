@@ -63,6 +63,7 @@ describe("chat service", () => {
     }
 
     expect(new Set(rooms.slice(0, 8)).size).toBe(1);
+    expect(rooms[0]).toMatch(/^[abcdefghijkmnopqrstuvwxyz23456789]{10}$/);
     expect(rooms[8]).not.toBe(rooms[0]);
 
     const received = next(sockets[1]!);
@@ -91,7 +92,8 @@ describe("chat service", () => {
 
     const firstReady = await next(firstSocket);
     const secondReady = await next(secondSocket);
-    expect(firstReady.room).toBe(secondReady.room);
+    expect(firstReady.room).toBe("development");
+    expect(secondReady.room).toBe("development");
 
     await Promise.all([close(firstSocket), close(secondSocket)]);
   });
@@ -104,9 +106,32 @@ describe("chat service", () => {
     firstSocket.accept();
     secondSocket.accept();
 
-    expect((await next(firstSocket)).room).toBe((await next(secondSocket)).room);
+    expect((await next(firstSocket)).room).toBe("weekend-test");
+    expect((await next(secondSocket)).room).toBe("weekend-test");
 
     await Promise.all([close(firstSocket), close(secondSocket)]);
+  });
+
+  test("matchmaker rooms use a shareable invite code", async () => {
+    const first = await connect(80, "random1");
+    const firstSocket = first.webSocket!;
+    firstSocket.accept();
+    const code = String((await next(firstSocket)).room);
+    expect(code).toMatch(/^[abcdefghijkmnopqrstuvwxyz23456789]{10}$/);
+
+    const invited = await connect(81, "friend", false, code);
+    const invitedSocket = invited.webSocket!;
+    invitedSocket.accept();
+    expect((await next(invitedSocket)).room).toBe(code);
+
+    const received = next(invitedSocket, (event) => event.type === "message");
+    firstSocket.send(JSON.stringify({ type: "message", text: "same room" }));
+    expect(await received).toMatchObject({
+      type: "message",
+      message: { nickname: "random1", text: "same room" },
+    });
+
+    await Promise.all([close(firstSocket), close(invitedSocket)]);
   });
 
   test("decrements presence when a socket closes", async () => {
