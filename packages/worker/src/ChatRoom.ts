@@ -121,15 +121,9 @@ export class ChatRoom implements DurableObject {
   async webSocketClose(socket: WebSocket): Promise<void> {
     const data = socket.deserializeAttachment() as SocketData | undefined;
     socket.close();
-    // getWebSockets() can still include a socket in CLOSING after close().
-    const remaining = this.state
-      .getWebSockets()
-      .filter(
-        (open) => open !== socket && open.readyState === WebSocket.OPEN,
-      );
     this.broadcast({
       type: "presence",
-      online: remaining.length,
+      online: this.onlineCount(socket, data),
     });
     if (!data?.managed) return;
     const matcher = this.env.MATCHMAKER.get(
@@ -146,6 +140,23 @@ export class ChatRoom implements DurableObject {
 
   webSocketError(socket: WebSocket): void {
     socket.close(1011, "WebSocket error");
+  }
+
+  private onlineCount(
+    except?: WebSocket,
+    leaving?: SocketData,
+  ): number {
+    const nick = leaving?.nickname.toLowerCase();
+    const session = leaving?.session;
+    return this.state.getWebSockets().filter((open) => {
+      if (except && open === except) return false;
+      if (open.readyState !== WebSocket.OPEN) return false;
+      const data = open.deserializeAttachment() as SocketData | undefined;
+      if (!data) return false;
+      if (session && data.session === session) return false;
+      if (nick && data.nickname.toLowerCase() === nick) return false;
+      return true;
+    }).length;
   }
 
   private broadcast(event: ServerEvent): void {
