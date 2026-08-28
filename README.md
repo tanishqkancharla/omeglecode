@@ -26,7 +26,7 @@ The sidebar always shows whether you are in a random room or a named room code. 
 npx --yes opencode-omeglecode@latest install pi
 ```
 
-Or `pi install npm:pi-omeglecode`. Start Pi, run `/omegle-nickname`, then the same `/omegle-connect weekend-test`. Chat appears in a boxed pane above the prompt. `ctrl+shift+m` opens a focus overlay to type; Esc returns to Pi. `ctrl+shift+c` compact the pane without disconnecting.
+Or `pi install npm:pi-omeglecode`. Start Pi, run `/omegle-nickname`, then the same `/omegle-connect weekend-test`. Chat appears in a boxed pane above the prompt. `ctrl+shift+m` sends the next prompt to the room — the footer reads `sending to #weekend-test`. Enter sends, Esc returns to Pi. `ctrl+shift+c` compact the pane without disconnecting.
 
 The installer writes `~/.pi/agent/extensions/omeglecode/`. Nickname and last room persist in `~/.pi/agent/omeglecode.json`.
 
@@ -50,7 +50,7 @@ The OpenCode installer adds the plugin to OpenCode's global `cli.json`. Room set
 ## Packages
 
 - `packages/plugin` — OpenCode v2 TUI plugin, sidebar UI, and `omeglecode` installer
-- `packages/pi` — Pi extension: above-prompt widget, focus overlay, slash commands
+- `packages/pi` — Pi extension: above-prompt widget, send-via-prompt, slash commands
 - `packages/client` — shared WebSocket client used by both hosts
 - `packages/worker` — Cloudflare Worker, matchmaker, and chat room Durable Objects
 - `packages/protocol` — shared WebSocket messages and limits

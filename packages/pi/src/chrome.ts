@@ -51,8 +51,8 @@ export function roomLabel(room: string): string {
   return room.length > 18 ? `#${room.slice(0, 17)}…` : `#${room}`;
 }
 
-export function inviteLabel(room: string): string {
-  return room ? "[ invite ]" : "[ make invite ]";
+export function sendingStatus(room: string): string {
+  return `sending to ${roomLabel(room)}`;
 }
 
 export type HistoryMessage = {
@@ -70,8 +70,7 @@ export function historyLines(
   if (!nickname) return [theme.fg("warning", "run /omegle-nickname to join")];
   if (!messages.length) return [theme.fg("muted", status)];
   const lines: string[] = [];
-  for (const [index, message] of messages.entries()) {
-    if (index > 0) lines.push("");
+  for (const message of messages) {
     lines.push(
       theme.fg("muted", `${message.nickname}  ${formatTime(message.sentAt)}`),
     );
@@ -93,37 +92,26 @@ function boxedRow(inner: string, width: number, border: (s: string) => string) {
 function titleLine(
   width: number,
   left: string,
-  right: string,
   theme: Theme,
   open = "╭─",
   close = "╮",
 ): string {
   const border = (s: string) => theme.fg("border", s);
   const inner = Math.max(0, width - visibleWidth(open) - visibleWidth(close));
-  const rightPart = right ? `${right} ` : "";
-  const maxLeft = Math.max(0, inner - visibleWidth(rightPart) - 1);
-  const fittedLeft = truncateToWidth(left, maxLeft);
-  const fill = Math.max(1, inner - visibleWidth(fittedLeft) - visibleWidth(rightPart));
-  return `${border(open)}${fittedLeft}${border("─".repeat(fill))}${rightPart}${border(close)}`;
+  const fittedLeft = truncateToWidth(left, Math.max(0, inner - 1));
+  const fill = Math.max(1, inner - visibleWidth(fittedLeft));
+  return `${border(open)}${fittedLeft}${border("─".repeat(fill))}${border(close)}`;
 }
 
-export function footerLine(
-  width: number,
-  hints: string,
-  theme: Theme,
-): string {
+function boxBottom(width: number, theme: Theme): string {
   const border = (s: string) => theme.fg("border", s);
   if (width <= 0) return "";
   if (width === 1) return border("╰");
   if (width === 2) return border("╰╯");
-  if (width === 3) return border("╰─╯");
-  const inner = width - 2;
-  const fitted = truncateToWidth(hints, Math.max(0, inner - 2));
-  const leftRule = Math.max(1, inner - visibleWidth(fitted) - 1);
-  return `${border("╰")}${border("─".repeat(leftRule))}${fitted}${border("─╯")}`;
+  return `${border("╰")}${border("─".repeat(width - 2))}${border("╯")}`;
 }
 
-export type PaneMode = "expanded" | "compact" | "focus";
+export type PaneMode = "expanded" | "compact";
 
 export function renderPane(options: {
   width: number;
@@ -134,8 +122,6 @@ export function renderPane(options: {
   body: string[];
   bodyRows: number;
   preview?: string;
-  draft?: string;
-  nickname?: string;
   theme: Theme;
 }): string[] {
   const width = Math.max(8, options.width);
@@ -148,50 +134,23 @@ export function renderPane(options: {
   const room = theme.fg("muted", roomLabel(options.room));
   const brand = theme.fg("accent", "omegle");
   const left = ` ${brand}  ·  ${count}  ·  ${room} `;
-  const invite = theme.fg("accent", inviteLabel(options.room));
 
   if (options.mode === "compact") {
     const preview = options.preview
-      ? ` ·  ${truncateToWidth(options.preview, Math.max(8, width - 48))}  `
-      : " ";
-    const hints = theme.fg("dim", "ctrl+shift+m");
-    return [
-      "",
-      titleLine(
-        width,
-        `${left}${theme.fg("muted", preview)}`,
-        hints,
-        theme,
-        "╭",
-        "╮",
-      ),
-    ];
+      ? ` ·  ${options.preview}`
+      : "";
+    return [titleLine(width, `${left}${theme.fg("muted", preview)} `, theme, "╭", "╮")];
   }
 
-  const compose =
-    options.mode === "focus"
-      ? padVisible(
-          ` ${theme.fg("muted", options.nickname ? `Message as ${options.nickname}` : "run /omegle-nickname")} ${options.draft ?? ""}`,
-          Math.max(0, width - 10),
-        ) + theme.fg("dim", "Enter")
-      : undefined;
-  const hints =
-    options.mode === "focus"
-      ? ` ${theme.fg("muted", "ctrl+shift+m")} ${theme.fg("dim", "focus")} ${border(" · ")} ${theme.fg("muted", "esc")} ${theme.fg("dim", "back to pi")} `
-      : ` ${theme.fg("muted", "ctrl+shift+m")} ${theme.fg("dim", "focus")} ${border(" · ")} ${theme.fg("muted", "ctrl+shift+c")} ${theme.fg("dim", "compact")} `;
-
-  const lines = [""];
-  lines.push(titleLine(width, left, invite, theme));
+  const lines = [titleLine(width, left, theme)];
   const rows = Math.max(1, options.bodyRows);
+  const body = options.body.slice(-rows);
+  const pad = Math.max(0, rows - body.length);
   for (let index = 0; index < rows; index++) {
-    const line = options.body[index] ?? "";
+    const line = index < pad ? "" : (body[index - pad] ?? "");
     lines.push(boxedRow(` ${line}`, width, border));
   }
-  if (compose !== undefined) {
-    lines.push(border(`├${"─".repeat(Math.max(0, width - 2))}┤`));
-    lines.push(boxedRow(compose, width, border));
-  }
-  lines.push(footerLine(width, hints, theme));
+  lines.push(boxBottom(width, theme));
   return lines;
 }
 

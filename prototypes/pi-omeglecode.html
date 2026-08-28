@@ -47,26 +47,23 @@
     .widget { margin: 0 14px 8px; color: var(--text); border: 1px solid var(--border); border-radius: 4px; background: #141418; }
     .widget.hidden { display: none; }
     .widget.compact { }
-    .whead, .wfoot { display: flex; justify-content: space-between; gap: 12px; padding: 4px 10px; color: var(--muted); font-size: 13px; }
+    .whead { display: flex; justify-content: space-between; gap: 12px; padding: 4px 10px; color: var(--muted); font-size: 13px; }
     .whead .brand { color: var(--accent); font-weight: 600; }
     .whead .count.hot { color: var(--pulse); }
-    .invite { color: var(--accent); cursor: pointer; }
-    .history { padding: 8px 12px 6px; min-height: 148px; display: flex; flex-direction: column; justify-content: flex-end; gap: 10px; }
-    .widget.compact .history, .widget.compact .wfoot { display: none; }
-    .widget.compact { }
+    .history { padding: 8px 12px 6px; min-height: 148px; display: flex; flex-direction: column; justify-content: flex-end; gap: 6px; }
+    .widget.compact .history { display: none; }
     .widget.compact .whead { padding: 6px 10px; }
     .chat .nick { color: var(--muted); font-size: 12px; }
     .chat.mine .nick { color: var(--you); }
-    .compose { display: none; border-top: 1px solid var(--border); padding: 6px 10px; color: var(--muted); }
-    .widget.focused { border-color: var(--accent); }
-    .widget.focused .compose { display: flex; justify-content: space-between; color: var(--text); }
     .editor { margin: 0 14px; border: 1px solid #3b4261; border-radius: 6px; min-height: 44px; padding: 8px 12px; display: flex; gap: 8px; }
+    .editor.sending { border-color: var(--accent); }
     .editor.focused { border-color: var(--accent); }
     .editor .prompt { color: var(--accent); }
     .caret { display: inline-block; width: 8px; height: 16px; background: var(--text); transform: translateY(2px); animation: blink 1s steps(1) infinite; }
-    .editor:not(.focused) .caret, .widget:not(.focused) .compose .caret { display: none; }
+    .editor:not(.focused) .caret { display: none; }
     @keyframes blink { 50% { opacity: 0; } }
     .footer { padding: 6px 18px 10px; color: var(--dim); font-size: 12px; display: flex; gap: 14px; }
+    .footer #status { color: var(--accent); }
     .kflash { position: absolute; left: 22px; bottom: 86px; background: #1f2335; border: 1px solid var(--accent); color: var(--accent); font-size: 12px; padding: 4px 8px; border-radius: 6px; display: none; }
     .dialog { position: absolute; inset: 0; background: rgba(8,8,10,.55); display: none; align-items: center; justify-content: center; }
     .dialog.open { display: flex; }
@@ -115,18 +112,15 @@
       <div class="widget" id="widget">
         <div class="whead">
           <span><span class="brand">omegle</span>  ·  <span class="count" id="count">3 online</span>  ·  <span id="room">random</span><span id="previewWrap"></span></span>
-          <span class="invite" id="invite">[ make invite ]</span>
         </div>
         <div class="history" id="history"></div>
-        <div class="compose"><span id="compose"></span><span class="caret"></span><span>Enter</span></div>
-        <div class="wfoot" id="wfoot">ctrl+shift+m focus · ctrl+shift+c compact</div>
       </div>
 
       <div class="editor focused" id="editor">
         <span class="prompt">▌</span>
         <span id="editorText"></span><span class="caret"></span>
       </div>
-      <div class="footer"><span>~/acme</span><span>opus 4.6</span><span>18.2k</span><span>$0.04</span></div>
+      <div class="footer"><span>~/acme</span><span>opus 4.6</span><span>18.2k</span><span>$0.04</span><span id="status"></span></div>
       <div class="kflash" id="kflash">ctrl+shift+m</div>
       <div class="dialog" id="dialog">
         <div class="card">
@@ -146,7 +140,7 @@
       online: 3,
       room: "",
       density: "expanded",
-      focused: false,
+      sending: false,
       messages: [{ nick: "nova", text: "shipping a patch on 1.1", mine: false, time: "12:04" }],
     };
 
@@ -158,17 +152,16 @@
     function render() {
       $("count").textContent = `${state.online} online`;
       $("room").textContent = state.room ? `#${state.room}` : "random";
-      $("invite").textContent = state.room ? "[ invite ]" : "[ make invite ]";
       $("previewWrap").innerHTML = state.density === "compact" && lastPreview()
         ? `  ·  ${lastPreview()}`
         : "";
       $("widget").classList.toggle("compact", state.density === "compact");
       $("widget").classList.toggle("hidden", state.density === "hidden");
-      $("widget").classList.toggle("focused", state.focused);
-      $("editor").classList.toggle("focused", !state.focused && !$("dialog").classList.contains("open"));
-      $("wfoot").textContent = state.focused
-        ? "esc back to pi"
-        : "ctrl+shift+m focus · ctrl+shift+c compact";
+      $("editor").classList.toggle("focused", !$("dialog").classList.contains("open"));
+      $("editor").classList.toggle("sending", state.sending);
+      $("status").textContent = state.sending
+        ? `sending to ${state.room ? `#${state.room}` : "random"}`
+        : "";
       $("history").innerHTML = state.messages.map((m) => `
         <div class="chat ${m.mine ? "mine" : ""}">
           <div class="nick">${m.nick}  ${m.time}</div>
@@ -206,26 +199,25 @@
       caption("Someone talks. The pane updates. You keep coding.");
       await sleep(2400);
 
-      caption("ctrl+shift+m focuses the hallway — not the agent.");
+      caption("ctrl+shift+m uses the Pi prompt — not a second input.");
       $("kflash").style.display = "block";
       await sleep(700);
       $("kflash").style.display = "none";
-      state.focused = true;
-      $("compose").textContent = "";
+      state.sending = true;
       render();
       await sleep(800);
 
-      caption("Type in the room. The model never sees it.");
-      await typeInto($("compose"), "yeah, 1.2 is fine", 42);
+      caption("The footer says sending to random. The model never sees it.");
+      await typeInto($("editorText"), "yeah, 1.2 is fine", 42);
       await sleep(350);
       addMessage({ nick: "kai", text: "yeah, 1.2 is fine", mine: true, time: "12:06" });
-      $("compose").textContent = "";
+      $("editorText").textContent = "";
       await sleep(800);
       addMessage({ nick: "nova", text: "same, just shipped on 1.2", mine: false, time: "12:06" });
       await sleep(1600);
 
       caption("Esc returns to Pi. The pane stays above the prompt.");
-      state.focused = false;
+      state.sending = false;
       render();
       await sleep(1400);
       await typeInto($("editorText"), "yes, do that — also bump the tests", 28);
@@ -252,20 +244,19 @@
       state.density = "compact";
       render();
       await sleep(2200);
-      caption("Pi-native hallway: live pane above the prompt, Esc back to work.");
+      caption("Pi-native hallway: live pane above the prompt, send from the editor.");
       $("play").disabled = false;
       document.body.classList.remove("playing");
     }
 
     function reset(updateCaption = true) {
       Object.assign(state, {
-        online: 3, room: "", density: "expanded", focused: false,
+        online: 3, room: "", density: "expanded", sending: false,
         messages: [{ nick: "nova", text: "shipping a patch on 1.1", mine: false, time: "12:04" }],
       });
       $("you2").hidden = true;
       $("you2text").textContent = "";
       $("editorText").textContent = "";
-      $("compose").textContent = "";
       $("dialog").classList.remove("open");
       render();
       if (updateCaption) caption("The hallway sits above the prompt. Play the walkthrough.");
@@ -273,7 +264,6 @@
 
     $("play").addEventListener("click", () => play());
     $("reset").addEventListener("click", () => reset());
-    $("invite").addEventListener("click", () => $("dialog").classList.add("open"));
     render();
     if (new URLSearchParams(location.search).has("autoplay")) setTimeout(() => play(), 1400);
   </script>

@@ -3,7 +3,33 @@ declare module "@earendil-works/pi-coding-agent" {
     fg(name: string, text: string): string;
   };
 
+  export type InputEvent = {
+    type: "input";
+    text: string;
+    images?: unknown[];
+    source: "interactive" | "rpc" | "extension";
+  };
+
+  export type InputEventResult =
+    | { action: "continue" }
+    | { action: "transform"; text: string; images?: unknown[] }
+    | { action: "handled" };
+
+  export class CustomEditor {
+    constructor(
+      tui: import("@earendil-works/pi-tui").TUI,
+      theme: Theme,
+      keybindings: unknown,
+      options?: unknown,
+    );
+    handleInput(data: string): void;
+    render(width: number): string[];
+    invalidate(): void;
+    dispose?(): void;
+  }
+
   export type ExtensionUIContext = {
+    theme: Theme;
     select(
       title: string,
       options: string[],
@@ -14,6 +40,10 @@ declare module "@earendil-works/pi-coding-agent" {
       placeholder?: string,
     ): Promise<string | undefined>;
     notify(message: string, type?: "info" | "warning" | "error"): void;
+    setStatus(key: string, text: string | undefined): void;
+    onTerminalInput(
+      handler: (data: string) => { consume?: boolean; data?: string } | undefined,
+    ): () => void;
     setWidget(
       key: string,
       content:
@@ -25,6 +55,22 @@ declare module "@earendil-works/pi-coding-agent" {
         | undefined,
       options?: { placement?: "aboveEditor" | "belowEditor" },
     ): void;
+    setEditorComponent(
+      factory:
+        | ((
+            tui: import("@earendil-works/pi-tui").TUI,
+            theme: Theme,
+            keybindings: unknown,
+          ) => import("@earendil-works/pi-tui").Component)
+        | undefined,
+    ): void;
+    getEditorComponent():
+      | ((
+          tui: import("@earendil-works/pi-tui").TUI,
+          theme: Theme,
+          keybindings: unknown,
+        ) => import("@earendil-works/pi-tui").Component)
+      | undefined;
     custom<T>(
       factory: (
         tui: import("@earendil-works/pi-tui").TUI,
@@ -52,6 +98,13 @@ declare module "@earendil-works/pi-coding-agent" {
     on(
       event: "session_start" | "session_shutdown",
       handler: (event: unknown, ctx: ExtensionContext) => void | Promise<void>,
+    ): void;
+    on(
+      event: "input",
+      handler: (
+        event: InputEvent,
+        ctx: ExtensionContext,
+      ) => void | Promise<void> | InputEventResult | Promise<InputEventResult>,
     ): void;
     registerCommand(
       name: string,

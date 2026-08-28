@@ -100,7 +100,6 @@ export class OmegleWidget implements Component {
       body,
       bodyRows: rows,
       preview: lastPreview(this.hallway.chat.messages()),
-      nickname: this.hallway.nickname,
       theme: this.theme as Theme,
     });
   }

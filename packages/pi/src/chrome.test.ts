@@ -1,14 +1,20 @@
 import { describe, expect, test } from "vitest";
 import {
   bodyRows,
-  inviteLabel,
+  historyLines,
   lastPreview,
   plainTheme,
   renderInviteCard,
   renderPane,
   roomLabel,
+  sendingStatus,
+  stripAnsi,
   visibleWidth,
 } from "./chrome.js";
+
+function stripInner(line: string): string {
+  return stripAnsi(line).replace(/^[│╰╭].|[│╯╮]$/g, "").trim();
+}
 
 describe("hallway chrome", () => {
   test("caps expanded body height", () => {
@@ -20,8 +26,8 @@ describe("hallway chrome", () => {
   test("labels random vs named rooms", () => {
     expect(roomLabel("")).toBe("random");
     expect(roomLabel("weekend-test")).toBe("#weekend-test");
-    expect(inviteLabel("")).toBe("[ make invite ]");
-    expect(inviteLabel("weekend-test")).toBe("[ invite ]");
+    expect(sendingStatus("")).toBe("sending to random");
+    expect(sendingStatus("weekend-test")).toBe("sending to #weekend-test");
   });
 
   test("renders an expanded box with matching line widths", () => {
@@ -34,15 +40,35 @@ describe("hallway chrome", () => {
       bodyRows: 4,
       theme: plainTheme,
     });
-    expect(lines.some((line) => line.includes("omegle"))).toBe(true);
+    expect(lines[0]).toContain("omegle");
     expect(lines.some((line) => line.includes("4 online"))).toBe(true);
     expect(lines.some((line) => line.includes("random"))).toBe(true);
-    expect(lines.some((line) => line.includes("[ make invite ]"))).toBe(true);
     expect(lines.some((line) => line.includes("anyone using bun"))).toBe(true);
-    const boxed = lines.filter((line) => line.trim().length > 0);
-    const widths = new Set(boxed.map((line) => visibleWidth(line)));
+    expect(lines.some((line) => line.includes("invite"))).toBe(false);
+    expect(lines.some((line) => line.includes("ctrl+shift"))).toBe(false);
+    expect(lines[0]?.startsWith("╭")).toBe(true);
+    expect(lines.at(-1)?.startsWith("╰")).toBe(true);
+    const widths = new Set(lines.map((line) => visibleWidth(line)));
     expect(widths.size).toBe(1);
     expect(widths.has(72)).toBe(true);
+  });
+
+  test("pins short history to the bottom of the box", () => {
+    const lines = renderPane({
+      width: 40,
+      mode: "expanded",
+      online: 1,
+      room: "",
+      body: ["hello"],
+      bodyRows: 4,
+      theme: plainTheme,
+    });
+    expect(lines).toHaveLength(6);
+    expect(stripInner(lines[1] ?? "")).toBe("");
+    expect(stripInner(lines[2] ?? "")).toBe("");
+    expect(stripInner(lines[3] ?? "")).toBe("");
+    expect(stripInner(lines[4] ?? "")).toBe("hello");
+    expect(lines[5]?.startsWith("╰")).toBe(true);
   });
 
   test("collapses to a single title line", () => {
@@ -58,27 +84,29 @@ describe("hallway chrome", () => {
       ]),
       theme: plainTheme,
     });
-    const boxed = lines.filter((line) => line.trim().length > 0);
-    expect(boxed).toHaveLength(1);
-    expect(boxed[0]).toContain("#weekend-test");
-    expect(boxed[0]).toContain("maya:");
-    expect(boxed[0]).toContain("ctrl+shift+m");
+    expect(lines).toHaveLength(1);
+    expect(lines[0]).toContain("#weekend-test");
+    expect(lines[0]).toContain("maya:");
+    expect(lines[0]).not.toContain("ctrl+shift");
   });
 
-  test("focus mode adds a compose row", () => {
-    const lines = renderPane({
-      width: 72,
-      mode: "focus",
-      online: 2,
-      room: "weekend-test",
-      body: ["hello"],
-      bodyRows: 3,
-      draft: "hi",
-      nickname: "kai",
-      theme: plainTheme,
-    });
-    expect(lines.some((line) => line.includes("Message as kai"))).toBe(true);
-    expect(lines.some((line) => line.includes("esc"))).toBe(true);
+  test("stacks messages without blank separators", () => {
+    const lines = historyLines(
+      [
+        { nickname: "maya", text: "hi", sentAt: 0 },
+        { nickname: "nova", text: "hey", sentAt: 0 },
+      ],
+      "connected",
+      "kai",
+      plainTheme,
+    );
+    expect(lines.filter((line) => line === "")).toHaveLength(0);
+    expect(lines).toEqual([
+      expect.stringMatching(/^maya {2}/),
+      "hi",
+      expect.stringMatching(/^nova {2}/),
+      "hey",
+    ]);
   });
 
   test("invite card tells both hosts to use the same command", () => {

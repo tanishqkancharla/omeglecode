@@ -16,7 +16,7 @@ flowchart LR
     M -->|stable room, capacity 8| R[ChatRoom]
     R --> E
     E --> V["aboveEditor widget"]
-    E --> F["focus overlay to type"]
+    E --> S["prompt editor + sending to #room"]
 ```
 
 ```mermaid
@@ -31,10 +31,10 @@ sequenceDiagram
     E->>R: WebSocket
     R-->>P: widget redraws in place
     U->>E: ctrl+shift+m
-    E->>P: ui.custom overlay with input
-    U->>R: type, Enter
+    E->>P: setStatus "sending to #room"
+    U->>R: type in Pi editor, Enter
     U->>E: Esc
-    E->>P: close overlay, widget still there
+    E->>P: clear status, editor prompts Pi again
     U->>P: keep prompting Pi
 ```
 
@@ -44,7 +44,7 @@ Pi is vertical: transcript, **widget**, editor, footer. The hallway lives in the
 
 ### Expanded — default
 
-A boxed pane directly above the prompt. ~8 history rows, header, shortcut footer. Connection is already live. The Pi editor stays focused.
+A boxed pane directly above the prompt. ~8 history rows and a header. Connection is already live. The Pi editor stays focused.
 
 ```
 you
@@ -55,18 +55,17 @@ pi
 
   [read] src/auth/middleware.ts
 
-╭─ omegle  ·  4 online  ·  random ──────────── [ make invite ] ─╮
+╭─ omegle  ·  4 online  ·  random ──────────────────────────────╮
 │ maya  12:05                                                   │
 │ anyone using bun for this?                                    │
-│                                                               │
 │ nova  12:06                                                   │
 │ yeah, 1.2 is fine                                             │
-╰─ ctrl+shift+m focus · ctrl+shift+c compact ───────────────────╯
+╰───────────────────────────────────────────────────────────────╯
 ▌ also bump the tests_
 ~/acme  opus 4.6  18.2k  $0.04
 ```
 
-This is the OpenCode sidebar, laid down. Same header (`omegle`, count, room, invite). Same transcript. No input row while the agent has the keyboard — that is what live-terminal does too.
+This is the OpenCode sidebar, laid down. Same header (`omegle`, count, room). Same transcript. No input row — that is what live-terminal does too. Invite is `/omegle-invite`, not a fake button in the title.
 
 Rules:
 
@@ -81,38 +80,34 @@ Rules:
 `ctrl+shift+c` or `/omegle-toggle` collapses to one title line above the prompt. Socket stays up.
 
 ```
-╭ omegle  ·  4 online  ·  random  ·  maya: anyone using bun?  ctrl+shift+m ╮
+╭ omegle  ·  4 online  ·  random  ·  maya: anyone using bun? ───╮
 ▌ also bump the tests_
 ```
 
 Toggle again to expand. Hidden entirely is a third press, or `/omegle-toggle` cycling `expanded → compact → hidden → expanded`. Prefer compact over hidden so presence never disappears.
 
-### Focus — type in the room
+### Send — type in the Pi prompt
 
-Widgets do not own the keyboard. live-terminal solves this with `ctrl+shift+f` → `ctx.ui.custom` overlay. Omeglecode does the same on **`ctrl+shift+m`** (keep OpenCode's chord).
+Widgets do not own the keyboard. **`ctrl+shift+m`** (keep OpenCode's chord) puts the existing Pi editor into send mode. The footer status reads `sending to #weekend-test` or `sending to random`. Enter sends to the room. Esc returns to prompting Pi. Slash commands still run.
 
-The overlay is **not** full-screen. It is the same pane, with an input, anchored on the widget:
+Do not open a `ctx.ui.custom` overlay to type. Do not add a compose row to the widget. The hallway is read-only chrome; the prompt is the input.
 
 ```
-╭─ omegle  ·  4 online  ·  random ──────────── [ make invite ] ─╮
+╭─ omegle  ·  4 online  ·  #weekend-test ───────────────────────╮
 │ maya  12:05                                                   │
 │ anyone using bun for this?                                    │
-│                                                               │
 │ kai  12:06                                                    │
 │ yeah, 1.2 is fine                                             │
-├───────────────────────────────────────────────────────────────┤
-│ Message as kai                                          Enter │
-╰─ esc back to pi ──────────────────────────────────────────────╯
-▌
+╰───────────────────────────────────────────────────────────────╯
+▌ yeah, 1.2 is fine_
+~/acme  opus 4.6  18.2k  $0.04  sending to #weekend-test
 ```
 
-`overlayOptions`: `anchor: "bottom-center"`, `width: "100%"`, `maxHeight` ≈ widget height, `margin.bottom` = editor + footer. Visually it replaces the widget while you type. Enter sends. Esc calls `done()` and the widget is still there.
-
-Do not use `ctx.ui.input()` as the main compose path. A one-shot prompt is a pager, not a hallway.
+`pi.on("input")` returns `{ action: "handled" }` so the model never sees the line. Empty Enter is also handled. Esc is intercepted on the editor wrapper so it does not abort the agent, and invite overlays still close.
 
 ### Invite
 
-`/omegle-invite` or `[ make invite ]` / `[ invite ]` uses a small centered `ctx.ui.custom` dialog. Random rooms mint a code, reconnect, then show:
+`/omegle-invite` uses a small centered `ctx.ui.custom` dialog. Random rooms mint a code, reconnect, then show:
 
 ```
 Invite to Omegle
@@ -133,7 +128,7 @@ The widget title switches from `random` to `#weekend-test`.
 | --- | --- | --- |
 | Dedicated sidebar column | `aboveEditor` widget. Real layout. Transcript shrinks, nothing is covered | Vertical instead of right |
 | Sidebar always visible while you prompt | Widget has no keyboard; editor stays focused | Same feeling |
-| Inline input in the sidebar | Focus overlay on `ctrl+shift+m` | Extra chord to type; Esc still returns |
+| Inline input in the sidebar | Same Pi editor, footer `sending to #room` | Extra chord to type; Esc still returns |
 | Sidebar toggle | Compact/hide the widget | Same |
 | Always-on socket | Connect on `session_start`, independent of widget height | Same |
 | Session-sticky rooms | Hash `"pi:" + ctx.sessionManager.getSessionFile()` | Same |
@@ -148,13 +143,13 @@ OpenCode names, live-terminal shape.
 
 | Action | Chord / command | live-terminal analog |
 | --- | --- | --- |
-| Focus hallway input | `ctrl+shift+m` | `ctrl+shift+f` |
+| Send via Pi editor | `ctrl+shift+m` | `ctrl+shift+f` |
 | Compact / expand widget | `ctrl+shift+c` or `/omegle-toggle` | `ctrl+shift+v` detach |
 | Nickname | `/omegle-nickname` | — |
 | Join named room | `/omegle-connect CODE` | `/live-terminal:attach` |
 | Invite / mint code | `/omegle-invite` | — |
-| Send | Enter (while focused) | — |
-| Return to Pi editor | Esc | close focus modal |
+| Send | Enter (while sending) | — |
+| Return to Pi | Esc | close focus modal |
 
 ## Session, privacy, matchmaking
 
@@ -185,20 +180,7 @@ pi.on("session_start", (_event, ctx) => {
 });
 
 pi.registerShortcut("ctrl+shift+m", {
-  handler: async (ctx) => {
-    await ctx.ui.custom(
-      (tui, theme, _kb, done) => new OmegleFocus(tui, theme, store, done),
-      {
-        overlay: true,
-        overlayOptions: {
-          anchor: "bottom-center",
-          width: "100%",
-          maxHeight: 14,
-          margin: { bottom: editorChrome(ctx) },
-        },
-      },
-    );
-  },
+  handler: (ctx) => toggleSendMode(ctx),
 });
 
 pi.registerShortcut("ctrl+shift+c", { handler: cycleDensity });
@@ -236,7 +218,7 @@ Extract connect, hash, reconnect, send, subscribe from `packages/plugin/src/Chat
 
 - [x] `session_start` / `session_shutdown`.
 - [x] `OmegleWidget` above the editor, expanded + compact.
-- [x] Focus overlay with input; Esc returns to the editor.
+- [x] Send mode uses the Pi editor; footer says `sending to #room`; Esc returns.
 - [x] Shortcuts and slash commands.
 - [x] Nickname + room in `~/.pi/agent/omeglecode.json`.
 - [x] Invite dialog.
@@ -245,6 +227,6 @@ Extract connect, hash, reconnect, send, subscribe from `packages/plugin/src/Chat
 ### Phase 3: Feel
 
 - [ ] Editor keeps keys while the widget is visible.
-- [ ] Focused overlay: Enter sends, Esc closes, history sticks to bottom.
+- [ ] Send mode: Enter sends to the room, Esc returns, history sticks to bottom.
 - [ ] `/reload` reconnects instead of leaking sockets.
 - [ ] Sit next to pi-live-terminal: two `aboveEditor` widgets stack. Keep Omegle compact by default if a live terminal is already using height — if we cannot detect that, 8 rows is the cap.
