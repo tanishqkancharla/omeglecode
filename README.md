@@ -23,12 +23,12 @@ The sidebar always shows whether you are in a random room or a named room code. 
 ### Pi
 
 ```sh
-npx --yes opencode-omeglecode@latest install pi
+pi install npm:pi-omeglecode
 ```
 
-Or `pi install npm:pi-omeglecode`. Start Pi, run `/omegle-nickname`, then the same `/omegle-connect weekend-test`. Chat appears in a boxed pane above the prompt. `ctrl+shift+m` opens a focus overlay to type; Esc returns to Pi. `ctrl+shift+c` compact the pane without disconnecting.
+Start Pi, run `/omegle-nickname`, then the same `/omegle-connect weekend-test`. Chat appears in a boxed pane above the prompt. `ctrl+shift+m` opens a focus overlay to type; Esc returns to Pi. `ctrl+shift+c` compact the pane without disconnecting.
 
-The installer writes `~/.pi/agent/extensions/omeglecode/`. Nickname and last room persist in `~/.pi/agent/omeglecode.json`.
+Nickname and last room persist in `~/.pi/agent/omeglecode.json`.
 
 ### Join the same room
 

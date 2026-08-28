@@ -1,6 +1,6 @@
 {
   "name": "pi-omeglecode",
-  "version": "0.4.0",
+  "version": "0.5.0",
   "description": "Anonymous Omeglecode hallway above the Pi prompt. Same Worker as OpenCode.",
   "license": "MIT",
   "repository": {

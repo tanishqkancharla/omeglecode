@@ -210,7 +210,7 @@ pi.registerCommand("omegle-invite", { handler: invite });
 
 `OmegleWidget.render(width)` returns a `string[]` of boxed lines, same structure as `LiveTerminalWidget`. Incoming events call `tui.requestRender()`. Theme only through `theme.fg(...)`.
 
-Install: `npx omeglecode install pi` writes `~/.pi/agent/extensions/omeglecode/index.ts` (jiti). Or `pi install` once the package is an extension.
+Install: `pi install npm:pi-omeglecode`.
 
 ## Goals
 

@@ -7,12 +7,6 @@ Pi and OpenCode share one Cloudflare Worker. `/omegle-connect weekend-test` from
 ## Install
 
 ```sh
-npx --yes opencode-omeglecode@latest install pi
-```
-
-Or, once this package is on npm:
-
-```sh
 pi install npm:pi-omeglecode
 ```
 

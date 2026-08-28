@@ -13,7 +13,7 @@ opencode2
 For Pi:
 
 ```sh
-npx --yes opencode-omeglecode@latest install pi
+pi install npm:pi-omeglecode
 ```
 
 Run `/omegle-nickname` once. Join a room with `/omegle-connect weekend-test`, or run `/omegle-invite` to create a room and get a command to share. Each active session connects automatically, even while chat is hidden. Use `/omegle-toggle` or `ctrl+shift+c` to toggle the sidebar and `ctrl+shift+m` to focus its message input. Enter sends and Esc returns to OpenCode.

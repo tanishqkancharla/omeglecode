@@ -1,65 +1,28 @@
 #!/usr/bin/env node
 import { execFileSync } from "node:child_process";
 import {
-  copyFileSync,
   existsSync,
   mkdirSync,
   readFileSync,
   rmSync,
   writeFileSync,
 } from "node:fs";
-import os from "node:os";
 import path from "node:path";
-import { fileURLToPath } from "node:url";
 
 const command = process.argv[2];
 const target = process.argv[3] ?? "opencode";
 
 if (command !== "install" || (target !== "opencode" && target !== "pi")) {
   console.error("Usage: npx --yes opencode-omeglecode@latest install");
-  console.error("       npx --yes opencode-omeglecode@latest install pi");
   process.exit(1);
 }
 
-if (target === "pi") installPi();
-else installOpenCode();
-
-function installPi() {
-  const here = path.dirname(fileURLToPath(import.meta.url));
-  const bundle = [
-    path.join(here, "pi-omeglecode.js"),
-    path.join(here, "..", "pi", "dist", "index.js"),
-    path.join(here, "..", "..", "pi", "dist", "index.js"),
-  ].find((file) => existsSync(file));
-  if (!bundle) {
-    console.error(
-      "Pi extension bundle not found. Build it with: pnpm --filter pi-omeglecode build",
-    );
-    console.error("Or install from npm with: pi install npm:pi-omeglecode");
-    process.exit(1);
-  }
-
-  const destDir = path.join(os.homedir(), ".pi", "agent", "extensions", "omeglecode");
-  mkdirSync(destDir, { recursive: true });
-  copyFileSync(bundle, path.join(destDir, "index.js"));
-  writeFileSync(
-    path.join(destDir, "package.json"),
-    `${JSON.stringify(
-      {
-        name: "omeglecode-pi-extension",
-        private: true,
-        type: "module",
-        pi: { extensions: ["./index.js"] },
-      },
-      undefined,
-      2,
-    )}\n`,
-  );
-  console.log("Omeglecode installed for Pi.");
-  console.log(`Wrote ${path.join(destDir, "index.js")}`);
-  console.log("Start Pi, then run /omegle-nickname.");
-  console.log("Join the same rooms as OpenCode with: /omegle-connect ROOM_ID");
+if (target === "pi") {
+  console.error("For Pi, use: pi install npm:pi-omeglecode");
+  process.exit(1);
 }
+
+installOpenCode();
 
 function installOpenCode() {
   let paths;
