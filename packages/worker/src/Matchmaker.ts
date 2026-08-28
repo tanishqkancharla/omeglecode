@@ -42,7 +42,9 @@ export class Matchmaker implements DurableObject {
       return this.release(await request.json<Assignment>());
     if (url.pathname === "/track") {
       try {
-        return this.track(await request.json<{ event?: unknown; room?: unknown }>());
+        return this.track(
+          await request.json<{ event?: unknown; room?: unknown }>(),
+        );
       } catch {
         return new Response("Invalid body", { status: 400 });
       }
