@@ -38,29 +38,33 @@
     }
     .chrome {
       width: min(1180px, 100%);
-      display: flex;
-      justify-content: space-between;
-      align-items: flex-end;
       margin-bottom: 14px;
-      gap: 16px;
     }
     h1 {
-      margin: 0;
-      font-size: 13px;
+      margin: 0 0 8px;
+      font-size: 12px;
       letter-spacing: 0.08em;
       text-transform: uppercase;
       color: var(--muted);
       font-weight: 600;
+    }
+    .caption-bar {
+      min-height: 44px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 16px;
     }
     #caption {
       font-family: "IBM Plex Sans", sans-serif;
       font-size: 22px;
       font-weight: 600;
       letter-spacing: -0.02em;
-      min-height: 32px;
       color: var(--text);
+      flex: 1;
     }
     .actions { display: flex; gap: 8px; }
+    body.playing .actions { visibility: hidden; }
     button {
       font-family: "IBM Plex Sans", sans-serif;
       font-size: 13px;
@@ -183,6 +187,7 @@
     }
     .overlay.open { display: flex; }
     .overlay.focused { border-color: var(--accent); }
+    .overlay.open:not(.focused) { border-color: #55555f; }
     .head, .roomrow {
       display: flex;
       justify-content: space-between;
@@ -255,13 +260,13 @@
 </head>
 <body>
   <div class="chrome">
-    <div>
-      <h1>Proposed Pi extension · not a screenshot of OpenCode</h1>
+    <h1>Proposed Pi extension · not a screenshot of OpenCode</h1>
+    <div class="caption-bar">
       <div id="caption">Ambient hallway in Pi. Play the walkthrough.</div>
-    </div>
-    <div class="actions">
-      <button class="primary" id="play" type="button">Play walkthrough</button>
-      <button id="reset" type="button">Reset</button>
+      <div class="actions">
+        <button class="primary" id="play" type="button">Play walkthrough</button>
+        <button id="reset" type="button">Reset</button>
+      </div>
     </div>
   </div>
 
@@ -407,9 +412,10 @@
 
     async function play() {
       $("play").disabled = true;
+      document.body.classList.add("playing");
       reset(false);
       caption("You are in Pi. The hallway is one quiet line.");
-      await sleep(1800);
+      await sleep(2200);
 
       addMessage({ nick: "maya", text: "anyone using bun for this?", mine: false, time: "12:06" });
       caption("Someone talks. The count ticks. You keep coding.");
@@ -435,21 +441,21 @@
       addMessage({ nick: "nova", text: "same, just shipped on 1.2", mine: false, time: "12:06" });
       await sleep(1600);
 
-      caption("Esc returns to Pi. The room stays.");
+      caption("Esc returns to Pi. The room stays on the right.");
       state.focused = false;
       delete $("compose").dataset.typing;
       renderChrome();
-      await sleep(900);
+      await sleep(1400);
       await typeInto($("editorText"), "yes, do that — also bump the tests", 28);
-      await sleep(280);
+      await sleep(400);
       $("you2").hidden = false;
       $("you2text").textContent = "yes, do that — also bump the tests";
       $("editorText").textContent = "";
-      await sleep(400);
+      await sleep(600);
 
       addMessage({ nick: "maya", text: "nice, I'll try the canary", mine: false, time: "12:07" });
       caption("Chat keeps moving while you prompt the agent.");
-      await sleep(2200);
+      await sleep(2800);
 
       caption("Invite anyone — OpenCode, Pi, or the companion TUI.");
       $("dialog").classList.add("open");
@@ -467,6 +473,7 @@
       await sleep(1800);
       caption("Pi-shaped OpenCode: ambient line, right overlay, Esc back to work.");
       $("play").disabled = false;
+      document.body.classList.remove("playing");
     }
 
     function reset(updateCaption = true) {
@@ -497,6 +504,9 @@
       }
     });
     renderChrome();
+    if (new URLSearchParams(location.search).has("autoplay")) {
+      setTimeout(() => play(), 1500);
+    }
   </script>
 </body>
 </html>
