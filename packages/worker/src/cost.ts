@@ -1,4 +1,4 @@
-import { durableObjectClasses, workerScriptName } from "./config.js";
+import { cloudflareAccountId, durableObjectClasses, workerScriptName } from "./config.js";
 import type {
   CostAvailable,
   CostResult,
@@ -251,6 +251,23 @@ export function usageFromGraphql(data: UsageViewer | undefined): CostUsage {
   return sumUsage([...invocations, ...periodic, ...storage]);
 }
 
+export const missingAnalyticsTokenReason =
+  "Durable Object cost needs a Worker secret named CLOUDFLARE_API_TOKEN or CLOUDFLARE_ANALYTICS_TOKEN with Account Analytics read.";
+
+export const analyticsForbiddenReason =
+  "Cloudflare GraphQL analytics returned 403. Wrangler OAuth often lacks Account Analytics read. Set a Worker secret named CLOUDFLARE_API_TOKEN (or CLOUDFLARE_ANALYTICS_TOKEN) with Account Analytics:Read, then redeploy. Joins and messages still update.";
+
+export function analyticsFailureReason(status: number, detail: string): string {
+  if (
+    status === 403 ||
+    /403|forbidden|not authorized|unauthorized|authentication error/i.test(
+      detail,
+    )
+  )
+    return analyticsForbiddenReason;
+  return `Cloudflare analytics query failed: ${detail}`;
+}
+
 function graphqlErrors(errors: { message?: string }[] | undefined): string {
   return (errors ?? [])
     .map((error) => error.message)
@@ -266,7 +283,7 @@ async function graphql<T>(
   token: string,
   query: string,
   variables: Record<string, string>,
-): Promise<GraphqlResponse<T>> {
+): Promise<GraphqlResponse<T> & { status: number }> {
   const response = await fetch(graphqlUrl, {
     method: "POST",
     headers: {
@@ -280,22 +297,27 @@ async function graphql<T>(
     errors?: { message?: string }[];
     messages?: { message?: string }[];
   };
-  if (!response.ok) {
-    const detail =
-      graphqlErrors(body.errors) ||
-      body.error ||
-      graphqlErrors(body.messages) ||
-      `GraphQL HTTP ${response.status}`;
-    return { errors: [{ message: detail }] };
-  }
-  return body;
+  const detail =
+    graphqlErrors(body.errors) ||
+    body.error ||
+    graphqlErrors(body.messages) ||
+    (response.ok ? "" : `GraphQL HTTP ${response.status}`);
+  if (!response.ok || detail)
+    return {
+      status: response.status,
+      errors: [{ message: analyticsFailureReason(response.status, detail) }],
+    };
+  return body.data === undefined
+    ? { status: response.status }
+    : { status: response.status, data: body.data };
 }
 
 async function resolveAccountTag(
   env: Env,
   token: string,
 ): Promise<string | CostUnavailable> {
-  const configured = env.CLOUDFLARE_ACCOUNT_ID?.trim();
+  const configured =
+    env.CLOUDFLARE_ACCOUNT_ID?.trim() || cloudflareAccountId;
   if (configured) return configured;
   const result = await graphql<AccountViewer>(
     token,
@@ -348,7 +370,7 @@ async function fetchUsage(
   if (result.errors?.length)
     return {
       available: false,
-      reason: `Cloudflare analytics query failed: ${graphqlErrors(result.errors)}`,
+      reason: graphqlErrors(result.errors) || analyticsForbiddenReason,
     };
   return usageFromGraphql(result.data);
 }
@@ -358,8 +380,7 @@ export async function durableObjectCost(env: Env): Promise<CostResult> {
   if (!token)
     return {
       available: false,
-      reason:
-        "Durable Object cost needs a Worker secret named CLOUDFLARE_API_TOKEN or CLOUDFLARE_ANALYTICS_TOKEN with Account Analytics read.",
+      reason: missingAnalyticsTokenReason,
     };
 
   const accountTag = await resolveAccountTag(env, token);

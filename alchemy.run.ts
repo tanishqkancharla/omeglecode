@@ -20,12 +20,10 @@ export const OmeglecodeWorker = Cloudflare.Worker("OmeglecodeWorker", {
   env: {
     MATCHMAKER: MatchmakerNamespace,
     ROOMS: RoomNamespace,
-    CLOUDFLARE_API_TOKEN: Config.redacted("CLOUDFLARE_ANALYTICS_TOKEN").pipe(
-      Config.orElse(() => Config.redacted("CLOUDFLARE_API_TOKEN")),
+    CLOUDFLARE_ACCOUNT_ID: "f0cf70001c376c51dd92217b2392f337",
+    CLOUDFLARE_API_TOKEN: Config.redacted("CLOUDFLARE_API_TOKEN").pipe(
+      Config.orElse(() => Config.redacted("CLOUDFLARE_ANALYTICS_TOKEN")),
       Config.withDefault(Redacted.make("")),
-    ),
-    CLOUDFLARE_ACCOUNT_ID: Config.string("CLOUDFLARE_ACCOUNT_ID").pipe(
-      Config.withDefault(""),
     ),
   },
 });

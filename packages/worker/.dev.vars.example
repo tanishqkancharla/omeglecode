@@ -2,5 +2,4 @@
 # Create at https://dash.cloudflare.com/profile/api-tokens (Account.Account Analytics:Read).
 # Leave unset to serve joins/messages with cost in an unavailable state.
 CLOUDFLARE_API_TOKEN=
-# Optional. 32-character account id. If unset, the worker discovers it via GraphQL.
-CLOUDFLARE_ACCOUNT_ID=
+# CLOUDFLARE_ANALYTICS_TOKEN is also accepted if you prefer that name.

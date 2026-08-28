@@ -1,5 +1,7 @@
 import { describe, expect, test } from "vitest";
 import {
+  analyticsFailureReason,
+  analyticsForbiddenReason,
   billedRequestUnits,
   costWindow,
   emptyUsage,
@@ -84,5 +86,17 @@ describe("durable object cost math", () => {
     expect(window.since).toBe(since.toISOString());
     expect(window.until).toBe(until.toISOString());
     expect(window.estimatedUsd).toBe(0);
+  });
+
+  test("maps GraphQL 403 to an unavailable cost reason", () => {
+    expect(analyticsFailureReason(403, "Authentication error")).toBe(
+      analyticsForbiddenReason,
+    );
+    expect(analyticsFailureReason(200, "forbidden")).toBe(
+      analyticsForbiddenReason,
+    );
+    expect(analyticsFailureReason(500, "internal")).toMatch(
+      /Cloudflare analytics query failed/,
+    );
   });
 });

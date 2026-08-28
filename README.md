@@ -97,12 +97,10 @@ Set a token with **Account Analytics read** as a Worker secret. Do not put the t
 
 ```sh
 # Local wrangler (packages/worker/.dev.vars, gitignored):
-# CLOUDFLARE_API_TOKEN=...
-# CLOUDFLARE_ACCOUNT_ID=...   # optional; discovered via GraphQL if omitted
+# CLOUDFLARE_API_TOKEN=...   # Account Analytics read; never commit this file
 
-# Production: export the secret in the environment that runs Alchemy, then deploy.
-# CLOUDFLARE_ANALYTICS_TOKEN is preferred; CLOUDFLARE_API_TOKEN is the fallback name.
-# Optional: CLOUDFLARE_ACCOUNT_ID if the token can see more than one account.
+# Production: Alchemy binds CLOUDFLARE_API_TOKEN from the deploy environment
+# if set, otherwise leave it empty so /live still serves joins/messages.
 pnpm infra:deploy
 ```
 
@@ -113,4 +111,18 @@ pnpm --filter @omeglecode/worker exec wrangler secret put CLOUDFLARE_API_TOKEN
 pnpm --filter @omeglecode/worker deploy
 ```
 
-The account id is not hardcoded. Alchemy binds `CLOUDFLARE_ACCOUNT_ID` when that env var is set at deploy time; otherwise the worker asks GraphQL `viewer.accounts`. The script name is `omeglecode` from `wrangler.jsonc` / `alchemy.run.ts`.
+The account id is `f0cf70001c376c51dd92217b2392f337` (Tanishqkancharla3@gmail.com's Account) in `wrangler.jsonc` and `alchemy.run.ts`. The script name is `omeglecode`. The analytics token is never stored in git; only the secret name is.
+
+Wrangler OAuth on a laptop often cannot read GraphQL analytics. If cost 403s, `/live` still shows joins and messages and the cost section stays unavailable until this secret is set:
+
+```sh
+# On a machine logged into Cloudflare (this worker):
+cd packages/worker
+pnpm exec wrangler secret put CLOUDFLARE_API_TOKEN
+# paste an API token with Account.Account Analytics:Read
+# (CLOUDFLARE_ANALYTICS_TOKEN is also accepted)
+
+# Then deploy the way this repo already deploys:
+cd ../..
+pnpm infra:deploy
+```
