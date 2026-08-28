@@ -54,8 +54,9 @@ export function Panel(props: {
               const stamp = time(message.sentAt);
               const nick = agent
                 ? [
-                    fg(theme().text.feedback.warning.default)(`${agent.prefix} `),
-                    fg(theme().text.subdued)(`${agent.name} ${stamp}\n`),
+                    fg(theme().text.subdued)(`${agent.prefix} `),
+                    fg(theme().text.default)(`${agent.name} `),
+                    fg(theme().text.subdued)(`${stamp}\n`),
                   ]
                 : [
                     fg(theme().text.subdued)(

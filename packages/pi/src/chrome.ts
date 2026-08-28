@@ -77,7 +77,7 @@ export function historyLines(
     const agent = splitAiNickname(message.nickname);
     lines.push(
       agent
-        ? `${theme.fg("warning", agent.prefix)} ${theme.fg("muted", `${agent.name}  ${stamp}`)}`
+        ? `${theme.fg("dim", agent.prefix)} ${theme.fg("text", agent.name)}  ${theme.fg("muted", stamp)}`
         : theme.fg("muted", `${message.nickname}  ${stamp}`),
     );
     lines.push(theme.fg("text", message.text));
@@ -88,7 +88,8 @@ export function historyLines(
 export function lastPreview(messages: HistoryMessage[]): string {
   const message = messages.at(-1);
   if (!message) return "";
-  return `${message.nickname}: ${message.text}`;
+  const agent = splitAiNickname(message.nickname);
+  return `${agent?.name ?? message.nickname}: ${message.text}`;
 }
 
 function boxedRow(inner: string, width: number, border: (s: string) => string) {
