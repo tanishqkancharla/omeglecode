@@ -6,7 +6,7 @@ import type {
   TextareaRenderable,
   TextRenderable,
 } from "@opentui/core";
-import { Show, createSignal, onCleanup, onMount } from "solid-js";
+import { Show, createEffect, onCleanup, onMount } from "solid-js";
 import type { Chat } from "./Chat.js";
 
 function time(value: number): string {
@@ -26,6 +26,8 @@ export function Panel(props: {
 }) {
   let history: ScrollBoxRenderable | undefined;
   let count: TextRenderable | undefined;
+  let room: TextRenderable | undefined;
+  let invite: TextRenderable | undefined;
   let transcript: TextRenderable | undefined;
   const theme = () => props.context.theme;
   const roomLabel = () => {
@@ -62,6 +64,14 @@ export function Panel(props: {
     onCleanup(unsubscribe);
   });
 
+  createEffect(() => {
+    const label = roomLabel();
+    const action = props.room() ? "[ invite ]" : "[ make invite ]";
+    if (room) room.content = label;
+    if (invite) invite.content = action;
+    props.context.renderer.requestRender();
+  });
+
   return (
     <box flexDirection="column" gap={1}>
       <box flexDirection="column">
@@ -79,8 +89,18 @@ export function Panel(props: {
           </text>
         </box>
         <box flexDirection="row" justifyContent="space-between">
-          <text fg={theme().text.subdued}>{roomLabel()}</text>
           <text
+            ref={(value: TextRenderable) => {
+              room = value;
+            }}
+            fg={theme().text.subdued}
+          >
+            {roomLabel()}
+          </text>
+          <text
+            ref={(value: TextRenderable) => {
+              invite = value;
+            }}
             fg={theme().text.action.primary.default}
             onMouseUp={(event) => {
               if (event.button !== 0) return;
@@ -133,25 +153,23 @@ export function Input(props: {
 }) {
   let input: TextareaRenderable | undefined;
   let hint: TextRenderable | undefined;
-  const [revision, setRevision] = createSignal(0);
-  const nickname = () => {
-    revision();
-    return props.nickname();
-  };
+  const nickname = () => props.nickname();
 
   onMount(() => {
-    const unsubscribe = props.chat.subscribe(() =>
-      setRevision((value) => value + 1),
-    );
     props.registerInput(() => {
       input?.focus();
       if (hint) hint.content = "Enter / Esc";
       props.context.renderer.requestRender();
     });
     onCleanup(() => {
-      unsubscribe();
       props.registerInput(undefined);
     });
+  });
+
+  createEffect(() => {
+    const value = nickname();
+    if (input && value) input.placeholder = `Message as ${value}`;
+    props.context.renderer.requestRender();
   });
 
   const send = () => {

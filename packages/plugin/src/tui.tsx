@@ -1,6 +1,6 @@
 /** @jsxImportSource @opentui/solid */
 import type { Plugin } from "@opencode-ai/plugin/tui";
-import { onCleanup } from "solid-js";
+import { createSignal, onCleanup } from "solid-js";
 import { validNickname, validRoomCode } from "@omeglecode/protocol";
 import { createChat } from "./Chat.js";
 import { Panel } from "./Panel.js";
@@ -20,6 +20,7 @@ function Commands(props: {
   context: Plugin.Context;
   chooseNickname: () => Promise<void>;
   connectRoom: (input?: string) => Promise<void>;
+  connectRandom: () => Promise<void>;
   invite: () => Promise<void>;
   focusInput: () => Promise<void>;
 }) {
@@ -70,6 +71,15 @@ function Commands(props: {
         bind: "ctrl+shift+i",
         run: props.invite,
       },
+      {
+        id: "omeglecode.random",
+        title: "Join a random Omegle room",
+        group: "Omeglecode",
+        palette: true,
+        slash: { name: "omegle-random" },
+        bind: false,
+        run: props.connectRandom,
+      },
     ],
     bindings: [
       "omeglecode.toggle",
@@ -119,8 +129,10 @@ const plugin: Plugin.Definition = {
         room: configuredRoom === undefined ? "" : configuredRoom,
       },
     });
-    const nickname = () => settings.nickname || undefined;
-    const room = () => settings.room || undefined;
+    const [nicknameValue, setNicknameValue] = createSignal(settings.nickname);
+    const nickname = () => nicknameValue() || undefined;
+    const [roomValue, setRoomValue] = createSignal(settings.room);
+    const room = () => roomValue() || undefined;
     const chat = createChat(context, endpoint);
     let focusInput: (() => void) | undefined;
     let focusPending = false;
@@ -163,6 +175,7 @@ const plugin: Plugin.Definition = {
       await setSettings((draft) => {
         draft.nickname = value;
       });
+      setNicknameValue(value);
       if (activeSession) connect(activeSession, value);
     };
 
@@ -185,6 +198,7 @@ const plugin: Plugin.Definition = {
       await setSettings((draft) => {
         draft.room = value;
       });
+      setRoomValue(value);
       const name = nickname();
       if (activeSession && name) connect(activeSession, name);
       context.ui.toast.show({
@@ -201,12 +215,27 @@ const plugin: Plugin.Definition = {
         await setSettings((draft) => {
           draft.room = value;
         });
+        setRoomValue(value);
         const name = nickname();
         if (activeSession && name) connect(activeSession, name);
       }
       await context.ui.dialog.alert({
         title: "Invite to Omegle",
         message: `Room: ${value}\n\nInstall OpenCode V2:\nnpm install --global @opencode-ai/cli@beta\n\nInstall Omeglecode:\nnpx --yes opencode-omeglecode@latest install\n\nStart OpenCode:\nopencode2\n\nThen run:\n/omegle-connect ${value}`,
+      });
+    };
+
+    const connectRandom = async () => {
+      if (!(await ensureNickname())) return;
+      await setSettings((draft) => {
+        draft.room = "";
+      });
+      setRoomValue("");
+      const name = nickname();
+      if (activeSession && name) connect(activeSession, name);
+      context.ui.toast.show({
+        variant: "success",
+        message: "Connected to a random Omegle room",
       });
     };
 
@@ -228,6 +257,7 @@ const plugin: Plugin.Definition = {
             context={context}
             chooseNickname={chooseNickname}
             connectRoom={connectRoom}
+            connectRandom={connectRandom}
             invite={invite}
             focusInput={focusChat}
           />
@@ -243,6 +273,7 @@ const plugin: Plugin.Definition = {
               context={context}
               chooseNickname={chooseNickname}
               connectRoom={connectRoom}
+              connectRandom={connectRandom}
               invite={invite}
               focusInput={focusChat}
             />
@@ -278,6 +309,7 @@ const plugin: Plugin.Definition = {
               context={context}
               chooseNickname={chooseNickname}
               connectRoom={connectRoom}
+              connectRandom={connectRandom}
               invite={invite}
               focusInput={focusChat}
             />
