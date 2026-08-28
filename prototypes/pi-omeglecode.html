@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>Omeglecode on Pi — proposed UX</title>
+  <title>Omeglecode on Pi — above the prompt</title>
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans:wght@500;600&display=swap" rel="stylesheet" />
@@ -18,258 +18,75 @@
       --you: #7dcfff;
       --ok: #9ece6a;
       --warn: #e0af68;
-      --border: #2a2a30;
-      --panel: #16161a;
+      --border: #3b4261;
       --pulse: #bb9af7;
     }
     * { box-sizing: border-box; }
-    html, body {
-      margin: 0;
-      height: 100%;
-      background: radial-gradient(1200px 600px at 50% -10%, #1a1a22 0%, var(--bg) 55%);
-      color: var(--text);
-      font-family: "IBM Plex Sans", sans-serif;
-    }
-    body {
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      padding: 28px 24px 40px;
-    }
-    .chrome {
-      width: min(1180px, 100%);
-      margin-bottom: 14px;
-    }
-    h1 {
-      margin: 0 0 8px;
-      font-size: 12px;
-      letter-spacing: 0.08em;
-      text-transform: uppercase;
-      color: var(--muted);
-      font-weight: 600;
-    }
-    .caption-bar {
-      min-height: 44px;
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      gap: 16px;
-    }
-    #caption {
-      font-family: "IBM Plex Sans", sans-serif;
-      font-size: 22px;
-      font-weight: 600;
-      letter-spacing: -0.02em;
-      color: var(--text);
-      flex: 1;
-    }
+    html, body { margin: 0; height: 100%; background: #0c0c0e; color: var(--text); font-family: "IBM Plex Sans", sans-serif; }
+    body { display: flex; flex-direction: column; align-items: center; padding: 24px 20px 36px; }
+    .chrome { width: min(1080px, 100%); margin-bottom: 12px; }
+    h1 { margin: 0 0 8px; font-size: 12px; letter-spacing: 0.08em; text-transform: uppercase; color: var(--muted); font-weight: 600; }
+    .caption-bar { min-height: 44px; display: flex; align-items: center; justify-content: space-between; gap: 16px; }
+    #caption { font-size: 22px; font-weight: 600; letter-spacing: -0.02em; flex: 1; }
     .actions { display: flex; gap: 8px; }
     body.playing .actions { visibility: hidden; }
-    button {
-      font-family: "IBM Plex Sans", sans-serif;
-      font-size: 13px;
-      font-weight: 600;
-      border: 1px solid var(--border);
-      background: #1c1c22;
-      color: var(--text);
-      border-radius: 8px;
-      padding: 8px 12px;
-      cursor: pointer;
-    }
+    button { font-family: inherit; font-size: 13px; font-weight: 600; border: 1px solid #2a2a30; background: #1c1c22; color: var(--text); border-radius: 8px; padding: 8px 12px; cursor: pointer; }
     button.primary { background: var(--accent); color: #0c0c0e; border-color: transparent; }
-    button:hover { filter: brightness(1.08); }
-    .window {
-      width: min(1180px, 100%);
-      background: var(--term);
-      border: 1px solid var(--border);
-      border-radius: 12px;
-      box-shadow: 0 30px 80px rgba(0,0,0,0.45);
-      overflow: hidden;
-    }
-    .titlebar {
-      height: 36px;
-      display: flex;
-      align-items: center;
-      gap: 8px;
-      padding: 0 12px;
-      border-bottom: 1px solid var(--border);
-      background: #17171b;
-      font-family: "IBM Plex Mono", monospace;
-      font-size: 12px;
-      color: var(--muted);
-    }
+    .window { width: min(1080px, 100%); background: var(--term); border: 1px solid #2a2a30; border-radius: 12px; box-shadow: 0 30px 80px rgba(0,0,0,.45); overflow: hidden; }
+    .titlebar { height: 36px; display: flex; align-items: center; gap: 8px; padding: 0 12px; border-bottom: 1px solid #2a2a30; background: #17171b; font-family: "IBM Plex Mono", monospace; font-size: 12px; color: var(--muted); }
     .dot { width: 10px; height: 10px; border-radius: 50%; }
-    .dot.r { background: #ff5f57; }
-    .dot.y { background: #febc2e; }
-    .dot.g { background: #28c840; }
-    .term {
-      font-family: "IBM Plex Mono", ui-monospace, monospace;
-      font-size: 14.5px;
-      line-height: 1.45;
-      height: 620px;
-      display: grid;
-      grid-template-rows: 1fr auto auto;
-      position: relative;
-    }
-    .transcript {
-      padding: 18px 22px 8px;
-      overflow: hidden;
-      position: relative;
-    }
-    .msg { margin: 0 0 16px; max-width: 72ch; transition: max-width 180ms ease; }
-    .term.docked .msg { max-width: 48ch; }
+    .dot.r { background: #ff5f57; } .dot.y { background: #febc2e; } .dot.g { background: #28c840; }
+    .term { font-family: "IBM Plex Mono", ui-monospace, monospace; font-size: 14.5px; line-height: 1.45; height: 640px; display: grid; grid-template-rows: 1fr auto auto auto; position: relative; }
+    .transcript { padding: 16px 22px 8px; overflow: hidden; }
+    .msg { margin: 0 0 14px; max-width: 78ch; }
     .msg .who { color: var(--muted); font-size: 12px; margin-bottom: 4px; }
     .msg.you .who { color: var(--you); }
     .msg.pi .who { color: var(--accent); }
     .tool { color: var(--dim); margin: 8px 0; }
-    .code {
-      margin-top: 8px;
-      padding: 8px 10px;
-      border: 1px solid var(--border);
-      border-radius: 6px;
-      color: #c0caf5;
-      background: #0e0e12;
-      white-space: pre-wrap;
-    }
-    .editor {
-      margin: 0 18px;
-      border: 1px solid #3b4261;
-      border-radius: 6px;
-      min-height: 44px;
-      padding: 8px 12px;
-      color: var(--text);
-      display: flex;
-      align-items: flex-start;
-      gap: 8px;
-    }
+    .code { margin-top: 8px; padding: 8px 10px; border: 1px solid #2a2a30; border-radius: 6px; color: #c0caf5; background: #0e0e12; }
+    .widget { margin: 0 14px 8px; color: var(--text); border: 1px solid var(--border); border-radius: 4px; background: #141418; }
+    .widget.hidden { display: none; }
+    .widget.compact { }
+    .whead, .wfoot { display: flex; justify-content: space-between; gap: 12px; padding: 4px 10px; color: var(--muted); font-size: 13px; }
+    .whead .brand { color: var(--accent); font-weight: 600; }
+    .whead .count.hot { color: var(--pulse); }
+    .invite { color: var(--accent); cursor: pointer; }
+    .history { padding: 8px 12px 6px; min-height: 148px; display: flex; flex-direction: column; justify-content: flex-end; gap: 10px; }
+    .widget.compact .history, .widget.compact .wfoot { display: none; }
+    .widget.compact { }
+    .widget.compact .whead { padding: 6px 10px; }
+    .chat .nick { color: var(--muted); font-size: 12px; }
+    .chat.mine .nick { color: var(--you); }
+    .compose { display: none; border-top: 1px solid var(--border); padding: 6px 10px; color: var(--muted); }
+    .widget.focused { border-color: var(--accent); }
+    .widget.focused .compose { display: flex; justify-content: space-between; color: var(--text); }
+    .editor { margin: 0 14px; border: 1px solid #3b4261; border-radius: 6px; min-height: 44px; padding: 8px 12px; display: flex; gap: 8px; }
     .editor.focused { border-color: var(--accent); }
     .editor .prompt { color: var(--accent); }
-    .caret {
-      display: inline-block;
-      width: 8px;
-      height: 16px;
-      background: var(--text);
-      transform: translateY(2px);
-      animation: blink 1s steps(1) infinite;
-    }
-    .editor:not(.focused) .caret { display: none; }
+    .caret { display: inline-block; width: 8px; height: 16px; background: var(--text); transform: translateY(2px); animation: blink 1s steps(1) infinite; }
+    .editor:not(.focused) .caret, .widget:not(.focused) .compose .caret { display: none; }
     @keyframes blink { 50% { opacity: 0; } }
-    .widget {
-      margin: 6px 18px 4px;
-      display: flex;
-      justify-content: space-between;
-      gap: 16px;
-      color: var(--muted);
-      font-size: 13px;
-    }
-    .widget .brand { color: var(--accent); font-weight: 600; }
-    .widget .count.hot { color: var(--pulse); }
-    .widget .preview { color: var(--text); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-    .footer {
-      padding: 6px 18px 10px;
-      color: var(--dim);
-      font-size: 12px;
-      display: flex;
-      gap: 14px;
-    }
-    .overlay {
-      position: absolute;
-      top: 8px;
-      right: 10px;
-      bottom: 118px;
-      width: 340px;
-      background: var(--panel);
-      border: 1px solid #3b4261;
-      border-radius: 8px;
-      display: none;
-      flex-direction: column;
-      box-shadow: -18px 0 40px rgba(0,0,0,0.35);
-    }
-    .overlay.open { display: flex; }
-    .overlay.focused { border-color: var(--accent); }
-    .overlay.open:not(.focused) { border-color: #55555f; }
-    .head, .roomrow {
-      display: flex;
-      justify-content: space-between;
-      padding: 10px 12px 0;
-    }
-    .head { font-weight: 600; }
-    .roomrow { color: var(--muted); font-size: 12.5px; padding-top: 4px; }
-    .invite {
-      color: var(--accent);
-      cursor: pointer;
-    }
-    .history {
-      flex: 1;
-      padding: 12px;
-      overflow: hidden;
-      display: flex;
-      flex-direction: column;
-      justify-content: flex-end;
-      gap: 12px;
-    }
-    .chat .nick { color: var(--muted); font-size: 12px; margin-bottom: 2px; }
-    .chat .body { color: var(--text); }
-    .chat.mine .nick { color: var(--you); }
-    .composer {
-      border-top: 1px solid var(--border);
-      padding: 8px 12px;
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      min-height: 40px;
-      color: var(--muted);
-    }
-    .overlay.focused .composer { color: var(--text); }
-    .overlay:not(.focused) .composer .caret { display: none; }
-    .dialog {
-      position: absolute;
-      inset: 0;
-      background: rgba(8,8,10,0.55);
-      display: none;
-      align-items: center;
-      justify-content: center;
-    }
+    .footer { padding: 6px 18px 10px; color: var(--dim); font-size: 12px; display: flex; gap: 14px; }
+    .kflash { position: absolute; left: 22px; bottom: 86px; background: #1f2335; border: 1px solid var(--accent); color: var(--accent); font-size: 12px; padding: 4px 8px; border-radius: 6px; display: none; }
+    .dialog { position: absolute; inset: 0; background: rgba(8,8,10,.55); display: none; align-items: center; justify-content: center; }
     .dialog.open { display: flex; }
-    .card {
-      width: 420px;
-      background: #1a1a20;
-      border: 1px solid var(--accent);
-      border-radius: 10px;
-      padding: 18px 20px;
-      font-family: "IBM Plex Mono", monospace;
-      font-size: 14px;
-    }
+    .card { width: 420px; background: #1a1a20; border: 1px solid var(--accent); border-radius: 10px; padding: 18px 20px; }
     .card h2 { margin: 0 0 12px; font-size: 15px; }
     .card .muted { color: var(--muted); margin-top: 10px; }
     .card code { color: var(--ok); }
-    .kflash {
-      position: absolute;
-      left: 22px;
-      bottom: 132px;
-      background: #1f2335;
-      border: 1px solid var(--accent);
-      color: var(--accent);
-      font-family: "IBM Plex Mono", monospace;
-      font-size: 12px;
-      padding: 4px 8px;
-      border-radius: 6px;
-      display: none;
-    }
   </style>
 </head>
 <body>
   <div class="chrome">
-    <h1>Proposed Pi extension · not a screenshot of OpenCode</h1>
+    <h1>Proposed Pi extension · same slot as pi-live-terminal</h1>
     <div class="caption-bar">
-      <div id="caption">Ambient hallway in Pi. Play the walkthrough.</div>
+      <div id="caption">The hallway sits above the prompt. Play the walkthrough.</div>
       <div class="actions">
         <button class="primary" id="play" type="button">Play walkthrough</button>
         <button id="reset" type="button">Reset</button>
       </div>
     </div>
   </div>
-
   <div class="window">
     <div class="titlebar">
       <span class="dot r"></span><span class="dot y"></span><span class="dot g"></span>
@@ -286,7 +103,7 @@
           <div>I'll inspect the token refresh path and the middleware next.</div>
           <div class="tool">[read] src/auth/middleware.ts</div>
           <div class="tool">[read] src/auth/refresh.ts</div>
-          <div>The middleware checks <span style="color:var(--warn)">exp</span> with zero skew. I'll add 30s leeway and reject only after both tokens fail.</div>
+          <div>The middleware checks <span style="color:var(--warn)">exp</span> with zero skew. I'll add 30s leeway.</div>
           <div class="code">if (payload.exp + 30 &lt; now) return unauthorized();</div>
         </div>
         <div class="msg you" id="you2" hidden>
@@ -295,30 +112,21 @@
         </div>
       </div>
 
+      <div class="widget" id="widget">
+        <div class="whead">
+          <span><span class="brand">omegle</span>  ·  <span class="count" id="count">3 online</span>  ·  <span id="room">random</span>  ·  <span id="preview"></span></span>
+          <span class="invite" id="invite">[ make invite ]</span>
+        </div>
+        <div class="history" id="history"></div>
+        <div class="compose"><span id="compose"></span><span class="caret"></span><span>Enter</span></div>
+        <div class="wfoot" id="wfoot">ctrl+shift+m focus · ctrl+shift+c compact</div>
+      </div>
+
       <div class="editor focused" id="editor">
         <span class="prompt">▌</span>
         <span id="editorText"></span><span class="caret"></span>
       </div>
-      <div class="widget" id="widget">
-        <span><span class="brand">omegle</span>  ·  <span class="count" id="count">3 online</span>  ·  <span id="room">random</span>  ·  <span class="preview" id="preview">connected</span></span>
-        <span id="whint">ctrl+shift+m</span>
-      </div>
-      <div class="footer">
-        <span>~/acme</span><span>opus 4.6</span><span>18.2k</span><span>$0.04</span>
-      </div>
-
-      <div class="overlay" id="overlay">
-        <div class="head"><span>Omegle</span><span class="count" id="pcount">3 online</span></div>
-        <div class="roomrow">
-          <span id="proom">random room</span>
-          <span class="invite" id="invite">[ make invite ]</span>
-        </div>
-        <div class="history" id="history"></div>
-        <div class="composer">
-          <span><span id="compose"></span><span class="caret"></span></span>
-          <span id="ohint">ctrl+shift+m</span>
-        </div>
-      </div>
+      <div class="footer"><span>~/acme</span><span>opus 4.6</span><span>18.2k</span><span>$0.04</span></div>
       <div class="kflash" id="kflash">ctrl+shift+m</div>
       <div class="dialog" id="dialog">
         <div class="card">
@@ -332,181 +140,140 @@
       </div>
     </div>
   </div>
-
   <script>
     const $ = (id) => document.getElementById(id);
     const state = {
       online: 3,
       room: "",
-      overlay: false,
+      density: "expanded",
       focused: false,
-      messages: [
-        { nick: "nova", text: "shipping a patch on 1.1", mine: false, time: "12:04" },
-      ],
+      messages: [{ nick: "nova", text: "shipping a patch on 1.1", mine: false, time: "12:04" }],
     };
-
-    function renderHistory() {
-      $("history").innerHTML = state.messages.map((m) => `
-        <div class="chat ${m.mine ? "mine" : ""}">
-          <div class="nick">${m.nick}  ${m.time}</div>
-          <div class="body">${m.text}</div>
-        </div>`).join("");
-    }
-
-    function setCounts() {
-      const label = `${state.online} online`;
-      $("count").textContent = label;
-      $("pcount").textContent = label;
-    }
 
     function lastPreview() {
       const last = state.messages[state.messages.length - 1];
-      return last ? `${last.nick}: ${last.text}` : "connected";
+      return last ? `${last.nick}: ${last.text}` : "";
     }
 
-    function renderChrome() {
-      setCounts();
+    function render() {
+      $("count").textContent = `${state.online} online`;
       $("room").textContent = state.room ? `#${state.room}` : "random";
-      $("proom").textContent = state.room ? `room #${state.room}` : "random room";
       $("invite").textContent = state.room ? "[ invite ]" : "[ make invite ]";
-      $("preview").textContent = lastPreview();
-      $("overlay").classList.toggle("open", state.overlay);
-      $("overlay").classList.toggle("focused", state.focused);
-      $("term").classList.toggle("docked", state.overlay);
+      $("preview").textContent = state.density === "compact" ? lastPreview() : "";
+      $("widget").classList.toggle("compact", state.density === "compact");
+      $("widget").classList.toggle("hidden", state.density === "hidden");
+      $("widget").classList.toggle("focused", state.focused);
       $("editor").classList.toggle("focused", !state.focused && !$("dialog").classList.contains("open"));
-      $("ohint").textContent = state.focused ? "Enter / Esc" : "ctrl+shift+m";
-      $("compose").dataset.placeholder = "Message as kai";
-      if (!state.focused && !$("compose").dataset.typing) {
-        $("compose").innerHTML = `<span style="color:var(--dim)">Message as kai</span>`;
-      }
-      renderHistory();
+      $("wfoot").textContent = state.focused
+        ? "esc back to pi"
+        : "ctrl+shift+m focus · ctrl+shift+c compact";
+      $("history").innerHTML = state.messages.map((m) => `
+        <div class="chat ${m.mine ? "mine" : ""}">
+          <div class="nick">${m.nick}  ${m.time}</div>
+          <div>${m.text}</div>
+        </div>`).join("");
     }
 
     function pulse() {
       $("count").classList.add("hot");
-      $("pcount").style.color = "var(--pulse)";
-      setTimeout(() => {
-        $("count").classList.remove("hot");
-        $("pcount").style.color = "";
-      }, 1200);
+      setTimeout(() => $("count").classList.remove("hot"), 1200);
     }
 
     function addMessage(msg) {
       state.messages.push(msg);
       state.online = Math.max(state.online, 4);
-      renderChrome();
+      render();
       pulse();
     }
 
-    function caption(text) { $("caption").textContent = text; }
-
-    function sleep(ms) { return new Promise((r) => setTimeout(r, ms)); }
-
+    const caption = (text) => { $("caption").textContent = text; };
+    const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
     async function typeInto(el, text, fps = 38) {
       el.textContent = "";
-      for (const ch of text) {
-        el.textContent += ch;
-        await sleep(fps);
-      }
+      for (const ch of text) { el.textContent += ch; await sleep(fps); }
     }
 
     async function play() {
       $("play").disabled = true;
       document.body.classList.add("playing");
       reset(false);
-      caption("You are in Pi. The hallway is one quiet line.");
-      await sleep(2200);
+      caption("Same slot as pi-live-terminal: a live pane above the prompt.");
+      await sleep(2400);
 
       addMessage({ nick: "maya", text: "anyone using bun for this?", mine: false, time: "12:06" });
-      caption("Someone talks. The count ticks. You keep coding.");
-      await sleep(2200);
+      caption("Someone talks. The pane updates. You keep coding.");
+      await sleep(2400);
 
-      caption("Same chord as OpenCode: ctrl+shift+m");
+      caption("ctrl+shift+m focuses the hallway — not the agent.");
       $("kflash").style.display = "block";
       await sleep(700);
       $("kflash").style.display = "none";
-      state.overlay = true;
       state.focused = true;
-      $("compose").dataset.typing = "1";
       $("compose").textContent = "";
-      renderChrome();
-      await sleep(900);
+      render();
+      await sleep(800);
 
-      caption("Type in the room. The agent is not here.");
+      caption("Type in the room. The model never sees it.");
       await typeInto($("compose"), "yeah, 1.2 is fine", 42);
       await sleep(350);
       addMessage({ nick: "kai", text: "yeah, 1.2 is fine", mine: true, time: "12:06" });
       $("compose").textContent = "";
-      await sleep(900);
+      await sleep(800);
       addMessage({ nick: "nova", text: "same, just shipped on 1.2", mine: false, time: "12:06" });
       await sleep(1600);
 
-      caption("Esc returns to Pi. The room stays on the right.");
+      caption("Esc returns to Pi. The pane stays above the prompt.");
       state.focused = false;
-      delete $("compose").dataset.typing;
-      renderChrome();
+      render();
       await sleep(1400);
       await typeInto($("editorText"), "yes, do that — also bump the tests", 28);
-      await sleep(400);
+      await sleep(350);
       $("you2").hidden = false;
       $("you2text").textContent = "yes, do that — also bump the tests";
       $("editorText").textContent = "";
-      await sleep(600);
+      await sleep(500);
 
       addMessage({ nick: "maya", text: "nice, I'll try the canary", mine: false, time: "12:07" });
       caption("Chat keeps moving while you prompt the agent.");
-      await sleep(2800);
+      await sleep(2600);
 
       caption("Invite anyone — OpenCode, Pi, or the companion TUI.");
       $("dialog").classList.add("open");
-      renderChrome();
+      render();
       await sleep(2400);
       $("dialog").classList.remove("open");
       state.room = "weekend-test";
-      renderChrome();
+      render();
       await sleep(1200);
 
-      caption("ctrl+shift+c hides it. The socket stays up.");
-      state.overlay = false;
-      state.focused = false;
-      renderChrome();
-      await sleep(1800);
-      caption("Pi-shaped OpenCode: ambient line, right overlay, Esc back to work.");
+      caption("ctrl+shift+c compacts it to one line. Socket stays up.");
+      state.density = "compact";
+      render();
+      await sleep(2200);
+      caption("Pi-native hallway: live pane above the prompt, Esc back to work.");
       $("play").disabled = false;
       document.body.classList.remove("playing");
     }
 
     function reset(updateCaption = true) {
-      state.online = 3;
-      state.room = "";
-      state.overlay = false;
-      state.focused = false;
-      state.messages = [
-        { nick: "nova", text: "shipping a patch on 1.1", mine: false, time: "12:04" },
-      ];
+      Object.assign(state, {
+        online: 3, room: "", density: "expanded", focused: false,
+        messages: [{ nick: "nova", text: "shipping a patch on 1.1", mine: false, time: "12:04" }],
+      });
       $("you2").hidden = true;
       $("you2text").textContent = "";
       $("editorText").textContent = "";
+      $("compose").textContent = "";
       $("dialog").classList.remove("open");
-      delete $("compose").dataset.typing;
-      renderChrome();
-      if (updateCaption) caption("Ambient hallway in Pi. Play the walkthrough.");
+      render();
+      if (updateCaption) caption("The hallway sits above the prompt. Play the walkthrough.");
     }
 
     $("play").addEventListener("click", () => play());
     $("reset").addEventListener("click", () => reset());
     $("invite").addEventListener("click", () => $("dialog").classList.add("open"));
-    document.addEventListener("keydown", (e) => {
-      if (e.key === "Escape") {
-        $("dialog").classList.remove("open");
-        state.focused = false;
-        renderChrome();
-      }
-    });
-    renderChrome();
-    if (new URLSearchParams(location.search).has("autoplay")) {
-      setTimeout(() => play(), 1500);
-    }
+    render();
+    if (new URLSearchParams(location.search).has("autoplay")) setTimeout(() => play(), 1400);
   </script>
 </body>
 </html>

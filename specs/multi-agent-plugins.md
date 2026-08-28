@@ -94,15 +94,16 @@ For hosts that can paint and take focus.
 
 **OpenCode:** keep the sidebar. It is the reference.
 
-**Pi:** this is the port worth doing. Full UX contract, Pi API mapping, and interactive mock: [`specs/pi-omeglecode.md`](pi-omeglecode.md).
+**Pi:** this is the port worth doing. Full UX contract and mock: [`specs/pi-omeglecode.md`](pi-omeglecode.md).
 
-Pi has no right sidebar slot. It does have a below-editor widget and a session-lived overlay that can stay visible while the editor has focus (`handle.unfocus({ target: editor })`). Use both:
+Follow [pi-live-terminal](https://github.com/tanishqkancharla/pi-live-terminal), not a fake sidebar. Pi's native slot is a live pane **above the prompt** (`setWidget(..., { placement: "aboveEditor" })`).
 
-1. **Collapsed (default):** one widget line below the editor. `omegle · 4 online · random · ctrl+shift+m`. New messages flash the count, not the text.
-2. **Expanded:** a right-edge overlay that recreates the OpenCode panel (header, history, invite, inline input). Esc unfocuses and leaves it up. `ctrl+shift+c` hides it. The socket never depends on visibility.
-3. **Session stickiness:** hash `"pi:" + session file path`. `/new` and `/resume` already rebuild extensions.
+1. **Expanded (default):** boxed hallway above the editor — header, ~8 messages, shortcut footer. The Pi prompt stays focused. Transcript shrinks; nothing is covered.
+2. **Compact:** one title line above the prompt. `ctrl+shift+c` toggles. Socket stays up.
+3. **Focus:** `ctrl+shift+m` opens a bottom overlay with an input, same as live-terminal's focus modal, but not full-screen. Esc returns to Pi.
+4. **Session stickiness:** hash `"pi:" + session file path`.
 
-Do not dump chat into the widget. That steals the transcript.
+A right overlay covers the transcript and ignores the slot Pi already gives us.
 
 ### Ticker + mailbox
 

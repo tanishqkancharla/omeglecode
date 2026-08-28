@@ -1,8 +1,10 @@
 # Pi Omeglecode
 
-Best-possible recreation of the OpenCode hallway inside Pi. Implementation spec plus UX contract. The interactive mock lives at [`prototypes/pi-omeglecode.html`](../prototypes/pi-omeglecode.html).
+Best-possible recreation of the OpenCode hallway inside Pi. Interactive mock: [`prototypes/pi-omeglecode.html`](../prototypes/pi-omeglecode.html).
 
-Pi has no right sidebar slot. It does have a persistent widget under the editor, a session-lived overlay that can stay on screen while the editor has focus, and real slash commands. That is enough to keep the feeling: ambient presence, one keystroke into a small room, Esc back to the agent, the model never in the chat.
+Steal the chrome from [pi-live-terminal](https://github.com/tanishqkancharla/pi-live-terminal), not from OpenCode's sidebar. That extension already proved the native slot: a bordered live pane **above the prompt**, `setWidget(..., { placement: "aboveEditor" })`. The Pi transcript shrinks. Nothing covers it. You keep typing to the agent while the pane updates.
+
+Omeglecode is the same object with chat inside it.
 
 ## System flow
 
@@ -13,8 +15,8 @@ flowchart LR
     W --> M[Matchmaker]
     M -->|stable room, capacity 8| R[ChatRoom]
     R --> E
-    E --> V[Widget below editor]
-    E --> O[Right overlay]
+    E --> V["aboveEditor widget"]
+    E --> F["focus overlay to type"]
 ```
 
 ```mermaid
@@ -25,24 +27,24 @@ sequenceDiagram
     participant R as Chat room
     U->>E: session_start
     E->>E: SHA-256("pi:" + session file), 128 bits
-    E->>P: setWidget collapsed ticker
-    E->>R: WebSocket even while overlay hidden
+    E->>P: setWidget aboveEditor (live pane)
+    E->>R: WebSocket
+    R-->>P: widget redraws in place
     U->>E: ctrl+shift+m
-    E->>P: overlay setHidden(false), focus()
-    U->>R: type in overlay, Enter
+    E->>P: ui.custom overlay with input
+    U->>R: type, Enter
     U->>E: Esc
-    E->>P: overlay unfocus to editor, stay visible
+    E->>P: close overlay, widget still there
     U->>P: keep prompting Pi
-    R-->>P: overlay and widget update in place
 ```
 
 ## What it looks like
 
-Pi is a vertical TUI: transcript, editor, footer. Omeglecode occupies two surfaces so the transcript does not get a fake 14-line chat dumped into it.
+Pi is vertical: transcript, **widget**, editor, footer. The hallway lives in the widget, the same place live-terminal puts tmux.
 
-### Collapsed — default
+### Expanded — default
 
-One widget line **below the editor**, `placement: "belowEditor"`. Connection is already live.
+A boxed pane directly above the prompt. ~8 history rows, header, shortcut footer. Connection is already live. The Pi editor stays focused.
 
 ```
 you
@@ -53,53 +55,64 @@ pi
 
   [read] src/auth/middleware.ts
 
+╭─ omegle  ·  4 online  ·  random ──────────── [ make invite ] ─╮
+│ maya  12:05                                                   │
+│ anyone using bun for this?                                    │
+│                                                               │
+│ nova  12:06                                                   │
+│ yeah, 1.2 is fine                                             │
+╰─ ctrl+shift+m focus · ctrl+shift+c compact ───────────────────╯
 ▌ also bump the tests_
-
-omegle  ·  4 online  ·  random  ·  maya: anyone using bun?     ctrl+shift+m
 ~/acme  opus 4.6  18.2k  $0.04
 ```
 
-Rules for this line:
+This is the OpenCode sidebar, laid down. Same header (`omegle`, count, room, invite). Same transcript. No input row while the agent has the keyboard — that is what live-terminal does too.
 
-- Left: `omegle` in the theme accent, then count, then room (`random` or `#weekend-test`).
-- Middle: last message preview, truncated. Empty rooms show the status string (`connecting`, `choose a nickname`).
-- Right: the focus chord, matching OpenCode's `ctrl+shift+m` hint.
-- New messages restyle the count for ~1.2s (`theme.fg("accent")`), then return to muted. Do not toast every line.
-- No nickname yet: `omegle  ·  /omegle-nickname to join`
+Rules:
 
-### Expanded — focused
+- Box-drawing borders via `theme.fg("border", ...)`, title in accent, hints in muted/dim. Truncate every line to `width`.
+- History sticks to the bottom. Mouse wheel scrolls, same as live-terminal's widget `handleInput`.
+- New messages restyle the count for ~1.2s. Do not toast every line.
+- Height: 8 body rows, or `min(8, max(3, floor(terminalRows * 0.28)))`. Live-terminal uses 16 because a tty needs a screen. Chat does not.
+- No nickname yet: body is `run /omegle-nickname to join`.
 
-`ctrl+shift+m` or `/omegle-toggle` shows a **right-edge overlay**. This is the OpenCode sidebar, Pi-shaped: same header, same transcript, same inline input, same invite affordance. It sits on the transcript, never on the editor, widget, or footer.
+### Compact
+
+`ctrl+shift+c` or `/omegle-toggle` collapses to one title line above the prompt. Socket stays up.
 
 ```
-you                              ┌ Omegle              4 online ┐
-  the auth middleware is         │ random room     [ make invite ] │
-  rejecting valid JWTs           │                                 │
-                                 │ maya  12:05                     │
-pi                               │ anyone using bun for this?      │
-  I'll inspect the token         │                                 │
-  refresh path next.             │ nova  12:06                     │
-                                 │ yeah, 1.2 is fine               │
-  [read] src/auth/middleware.ts  │                                 │
-                                 ├─────────────────────────────────┤
-▌ also bump the tests_           │ Message as kai           Enter/Esc │
-omegle  ·  4 online  ·  random   └─────────────────────────────────┘
-~/acme  opus 4.6  18.2k  $0.04
+╭ omegle  ·  4 online  ·  random  ·  maya: anyone using bun?  ctrl+shift+m ╮
+▌ also bump the tests_
 ```
 
-Focused input: block cursor, placeholder `Message as {nickname}`, hint `Enter/Esc`. Enter sends. Esc does **not** close the panel.
+Toggle again to expand. Hidden entirely is a third press, or `/omegle-toggle` cycling `expanded → compact → hidden → expanded`. Prefer compact over hidden so presence never disappears.
 
-### Expanded — unfocused
+### Focus — type in the room
 
-Esc (or clicking back into the editor) calls `handle.unfocus({ target: editor })`. The overlay stays. The input hint flips to `ctrl+shift+m`. You prompt Pi while the room keeps scrolling. This is the OpenCode move: sidebar visible, composer focused.
+Widgets do not own the keyboard. live-terminal solves this with `ctrl+shift+f` → `ctx.ui.custom` overlay. Omeglecode does the same on **`ctrl+shift+m`** (keep OpenCode's chord).
 
-### Hidden again
+The overlay is **not** full-screen. It is the same pane, with an input, anchored on the widget:
 
-`ctrl+shift+c` or `/omegle-toggle` calls `handle.setHidden(true)`. Widget remains. Socket remains. Same as closing OpenCode's sidebar.
+```
+╭─ omegle  ·  4 online  ·  random ──────────── [ make invite ] ─╮
+│ maya  12:05                                                   │
+│ anyone using bun for this?                                    │
+│                                                               │
+│ kai  12:06                                                    │
+│ yeah, 1.2 is fine                                             │
+├───────────────────────────────────────────────────────────────┤
+│ Message as kai                                          Enter │
+╰─ esc back to pi ──────────────────────────────────────────────╯
+▌
+```
+
+`overlayOptions`: `anchor: "bottom-center"`, `width: "100%"`, `maxHeight` ≈ widget height, `margin.bottom` = editor + footer. Visually it replaces the widget while you type. Enter sends. Esc calls `done()` and the widget is still there.
+
+Do not use `ctx.ui.input()` as the main compose path. A one-shot prompt is a pager, not a hallway.
 
 ### Invite
 
-`/omegle-invite` or `[ make invite ]` / `[ invite ]` uses `ctx.ui.custom` as a small centered overlay (Pi's native dialog). If the session is still on a random room, mint a code, reconnect to it, then show:
+`/omegle-invite` or `[ make invite ]` / `[ invite ]` uses a small centered `ctx.ui.custom` dialog. Random rooms mint a code, reconnect, then show:
 
 ```
 Invite to Omegle
@@ -112,133 +125,126 @@ Ask them to run:
 Works in OpenCode, Pi, or the companion TUI.
 ```
 
-Confirm dismisses. The widget and panel labels switch from `random` to `#weekend-test`.
-
-### Narrow terminal
-
-If width < 100 columns, the overlay anchors `bottom-center`, full width, max 14 rows, sitting above the editor with a bottom margin that clears widget + footer. Same content, stacked instead of docked. The widget line stays.
-
-### First run
-
-Do not modal-prompt on `session_start`. Widget tells you to run `/omegle-nickname`. That command uses `ctx.ui.input`. After a valid name, connect immediately, still collapsed.
+The widget title switches from `random` to `#weekend-test`.
 
 ## Why this is the ceiling
 
-| OpenCode | Pi equivalent | Gap |
+| OpenCode | Pi, following live-terminal | Gap |
 | --- | --- | --- |
-| Dedicated `sidebar.content` slot | Overlay with `anchor: "right-center"`, bottom margin above editor | Overlay covers the right of the transcript instead of splitting layout |
-| Sidebar toggle | `handle.setHidden` | Same feeling |
-| Sidebar visible, composer focused | `handle.unfocus({ target: editor })` | First-class in pi-tui |
-| Focus input `ctrl+shift+m` | `registerShortcut("ctrl+shift+m")` + `handle.focus()` | Same chord |
-| Always-on socket from `session.composer.top` | Connect on `session_start`, ignore overlay visibility | Same |
-| Session-sticky rooms | Hash `"pi:" + ctx.sessionManager.getSessionFile()` | `/new` and `/resume` already rebuild extensions |
-| Dialogs, toasts, local nickname | `ctx.ui.input`, `notify`, `~/.pi/agent/omeglecode.json` | Same |
+| Dedicated sidebar column | `aboveEditor` widget. Real layout. Transcript shrinks, nothing is covered | Vertical instead of right |
+| Sidebar always visible while you prompt | Widget has no keyboard; editor stays focused | Same feeling |
+| Inline input in the sidebar | Focus overlay on `ctrl+shift+m` | Extra chord to type; Esc still returns |
+| Sidebar toggle | Compact/hide the widget | Same |
+| Always-on socket | Connect on `session_start`, independent of widget height | Same |
+| Session-sticky rooms | Hash `"pi:" + ctx.sessionManager.getSessionFile()` | Same |
 
-Do not expand the below-editor widget into a 12-line chat. That steals the transcript, which is Pi's whole product. Do not `sendMessage` or `appendEntry` hallway text into the Pi thread. Do not register an LLM tool that sends chat.
+A right-edge overlay was the previous proposal. Drop it. It covers the transcript, fights Pi's vertical layout, and ignores the slot this repo's author already uses for live panes.
+
+Do not grow the widget to 16+ rows. That is a terminal. This is a hallway. Do not `sendMessage` / `appendEntry` chat into the Pi thread. Do not register an LLM tool that sends chat.
 
 ## Chrome and chords
 
-Keep OpenCode's muscle memory. Pi users who also use OpenCode should not learn a second set.
+OpenCode names, live-terminal shape.
 
-| Action | Chord / command |
-| --- | --- |
-| Focus hallway input (opens if hidden) | `ctrl+shift+m` |
-| Toggle overlay visibility | `ctrl+shift+c` or `/omegle-toggle` |
-| Nickname | `/omegle-nickname` |
-| Join named room | `/omegle-connect CODE` |
-| Invite / mint code | `/omegle-invite` |
-| Send | Enter |
-| Return to Pi editor | Esc |
+| Action | Chord / command | live-terminal analog |
+| --- | --- | --- |
+| Focus hallway input | `ctrl+shift+m` | `ctrl+shift+f` |
+| Compact / expand widget | `ctrl+shift+c` or `/omegle-toggle` | `ctrl+shift+v` detach |
+| Nickname | `/omegle-nickname` | — |
+| Join named room | `/omegle-connect CODE` | `/live-terminal:attach` |
+| Invite / mint code | `/omegle-invite` | — |
+| Send | Enter (while focused) | — |
+| Return to Pi editor | Esc | close focus modal |
 
 ## Session, privacy, matchmaking
 
 On `session_start`:
 
 1. Read nickname + last room from `~/.pi/agent/omeglecode.json`.
-2. Session key = SHA-256 of `pi:` plus the session file path, truncated to 32 hex chars. Ephemeral sessions (no file) hash `pi:ephemeral:` plus `cwd` plus process start time so they still get a room without colliding with a later resume of a real file.
-3. Connect to the existing Worker. Same protocol, same 8-person cap, same 50-line history, same 280-char messages.
-4. Prefixing `pi:` avoids colliding with an OpenCode session ID that happened to stringify the same way. The matchmaker still mixes hosts in random rooms.
+2. Session key = SHA-256 of `pi:` plus the session file path, truncated to 32 hex chars. Ephemeral sessions hash `pi:ephemeral:` plus cwd plus process start time.
+3. Connect to the existing Worker. Same protocol, 8-person cap, 50-line history, 280-char messages.
+4. `setWidget("omeglecode", factory, { placement: "aboveEditor" })`.
 
-On `session_shutdown`: `handle.hide()`, close the socket, clear the widget.
+On `session_shutdown`: `setWidget("omeglecode", undefined)`, close the socket.
 
-Reconnect, nickname collision toasts, and rate limits stay in the shared client. The Pi shell does not reimplement them.
+Prefixing `pi:` avoids colliding with OpenCode session IDs. Random rooms still mix hosts.
 
 ## Pi API mapping
 
+Copy the live-terminal attach pattern.
+
 ```ts
 pi.on("session_start", (_event, ctx) => {
-  // 1. setWidget("omeglecode", factory, { placement: "belowEditor" })
-  // 2. connect WebSocket
-  // 3. void ctx.ui.custom(panel, {
-  //      overlay: true,
-  //      overlayOptions: () => wide
-  //        ? { anchor: "right-center", width: 38, minWidth: 34,
-  //            margin: { top: 0, right: 0, bottom: editorChrome, left: 0 } }
-  //        : { anchor: "bottom-center", width: "100%", maxHeight: 14,
-  //            margin: { bottom: editorChrome } },
-  //      onHandle: (h) => { handle = h; h.setHidden(true); h.unfocus({ target: editor }) },
-  //    })
-  //    Never call done() until session_shutdown.
+  if (!ctx.hasUI) return;
+  connectSocket(sessionKey(ctx));
+  ctx.ui.setWidget(
+    "omeglecode",
+    (tui, theme) => new OmegleWidget(tui, theme, store),
+    { placement: "aboveEditor" },
+  );
 });
 
-pi.registerShortcut("ctrl+shift+m", { handler: focusHallway });
-pi.registerShortcut("ctrl+shift+c", { handler: toggleHallway });
-pi.registerCommand("omegle-toggle", { handler: toggleHallway });
+pi.registerShortcut("ctrl+shift+m", {
+  handler: async (ctx) => {
+    await ctx.ui.custom(
+      (tui, theme, _kb, done) => new OmegleFocus(tui, theme, store, done),
+      {
+        overlay: true,
+        overlayOptions: {
+          anchor: "bottom-center",
+          width: "100%",
+          maxHeight: 14,
+          margin: { bottom: editorChrome(ctx) },
+        },
+      },
+    );
+  },
+});
+
+pi.registerShortcut("ctrl+shift+c", { handler: cycleDensity });
+pi.registerCommand("omegle-toggle", { handler: cycleDensity });
 pi.registerCommand("omegle-nickname", { handler: promptNickname });
 pi.registerCommand("omegle-connect", { handler: connectRoom, getArgumentCompletions });
 pi.registerCommand("omegle-invite", { handler: invite });
 ```
 
-Panel component: `Box` + `ScrollView` + `Input` from `@earendil-works/pi-tui`. Theme only through `theme.fg(...)`. Truncate every line to `width`. Incoming messages call `tui.requestRender()` and stick the scroll view to the bottom.
+`OmegleWidget.render(width)` returns a `string[]` of boxed lines, same structure as `LiveTerminalWidget`. Incoming events call `tui.requestRender()`. Theme only through `theme.fg(...)`.
 
-Install: `npx omeglecode install pi` writes `~/.pi/agent/extensions/omeglecode/index.ts` (jiti, no compile step). Same installer already used for OpenCode.
+Install: `npx omeglecode install pi` writes `~/.pi/agent/extensions/omeglecode/index.ts` (jiti). Or `pi install` once the package is an extension.
 
 ## Goals
 
-- Recreate OpenCode's hallway inside Pi without stealing the transcript.
-- Keep the socket up while the overlay is hidden.
-- Preserve OpenCode chords and slash names.
+- Recreate the hallway in Pi's native live-pane slot.
+- Keep the socket up while the widget is compact or hidden.
+- Preserve OpenCode slash names and `ctrl+shift+m`.
 - Mix with OpenCode users in random and invite rooms.
-- Theme with Pi tokens; survive `/reload` and session switch.
 
 ## Non-goals
 
-- A dedicated layout split (Pi cannot give us a column).
+- A right sidebar clone.
+- Full-screen focus (live-terminal needs that for a tty; chat does not).
 - Agent-mediated send/receive.
-- Avatars, DMs, markdown in chat, or a web client.
-- Replacing Pi's footer (`setFooter` is too aggressive; the widget is enough).
+- Replacing Pi's footer.
 
 ## Implementation
 
 ### Phase 1: Shared client
 
-```callstack
--packages/plugin/src/Chat.ts
-+packages/client/src/index.ts
-+packages/plugin/src/Chat.ts (re-export)
-```
+Extract connect, hash, reconnect, send, subscribe from `packages/plugin/src/Chat.ts`. Accept a `host` tag so Pi hashes `pi:`.
 
-Extract connect, hash, reconnect, send, subscribe from the OpenCode plugin. Accept a `host` tag so Pi hashes `pi:` and OpenCode hashes `opencode:`. No protocol change.
+### Phase 2: Pi extension
 
-### Phase 2: Pi extension shell
-
-```callstack
-+packages/pi/src/index.ts
-+packages/pi/src/Panel.ts
-+packages/pi/src/widget.ts
-```
-
-- [ ] `session_start` / `session_shutdown` lifecycle.
-- [ ] Collapsed widget.
-- [ ] Persistent overlay; never `done()` until shutdown.
+- [ ] `session_start` / `session_shutdown`.
+- [ ] `OmegleWidget` above the editor, expanded + compact.
+- [ ] Focus overlay with input; Esc returns to the editor.
 - [ ] Shortcuts and slash commands.
 - [ ] Nickname + room in `~/.pi/agent/omeglecode.json`.
-- [ ] Wide right dock and narrow bottom drawer.
+- [ ] Invite dialog.
 - [ ] Installer target `pi`.
 
 ### Phase 3: Feel
 
-- [ ] Unfocused overlay does not steal keys from the editor.
-- [ ] Focused overlay: Enter sends, Esc unfocuses, history sticks to bottom.
-- [ ] Invite dialog copies the OpenCode copy, plus one line that the command works in OpenCode too.
+- [ ] Editor keeps keys while the widget is visible.
+- [ ] Focused overlay: Enter sends, Esc closes, history sticks to bottom.
 - [ ] `/reload` reconnects instead of leaking sockets.
+- [ ] Sit next to pi-live-terminal: two `aboveEditor` widgets stack. Keep Omegle compact by default if a live terminal is already using height — if we cannot detect that, 8 rows is the cap.
