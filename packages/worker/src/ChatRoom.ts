@@ -4,6 +4,7 @@ import {
   type ChatMessage,
   type ServerEvent,
 } from "@omeglecode/protocol";
+import { trackEvent } from "./Matchmaker.js";
 import type { Env, SocketData } from "./types.js";
 
 const windowMs = 10_000;
@@ -22,7 +23,8 @@ export class ChatRoom implements DurableObject {
     const managed = request.headers.get("X-Omeglecode-Managed");
     const session = request.headers.get("X-Omeglecode-Session");
     const room = request.headers.get("X-Omeglecode-Room");
-    if (!nickname || !session || !room || !managed)
+    const label = request.headers.get("X-Omeglecode-Label");
+    if (!nickname || !session || !room || !managed || !label)
       return new Response("Missing connection data", { status: 400 });
 
     const sockets = this.state.getWebSockets();
@@ -41,6 +43,7 @@ export class ChatRoom implements DurableObject {
     const server = pair[1];
     this.state.acceptWebSocket(server);
     server.serializeAttachment({
+      label,
       managed: managed === "true",
       nickname,
       session,
@@ -115,6 +118,7 @@ export class ChatRoom implements DurableObject {
       "history",
       [...history, message].slice(-limits.history),
     );
+    await trackEvent(this.env, "message", data.label).catch(() => {});
     this.broadcast({ type: "message", message });
   }
 

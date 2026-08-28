@@ -1,6 +1,6 @@
 import { validNickname, validRoomCode } from "@omeglecode/protocol";
 import { ChatRoom } from "./ChatRoom.js";
-import { Matchmaker } from "./Matchmaker.js";
+import { Matchmaker, trackEvent } from "./Matchmaker.js";
 import type { Assignment, Env } from "./types.js";
 
 export { ChatRoom, Matchmaker };
@@ -9,6 +9,13 @@ export default {
   async fetch(request: Request, env: Env): Promise<Response> {
     const url = new URL(request.url);
     if (url.pathname === "/health") return Response.json({ ok: true });
+    if (url.pathname === "/stats") {
+      if (request.method !== "GET")
+        return new Response("Method not allowed", { status: 405 });
+      return env.MATCHMAKER.get(env.MATCHMAKER.idFromName("global")).fetch(
+        "https://matchmaker/stats",
+      );
+    }
     if (url.pathname !== "/connect")
       return new Response("Not found", { status: 404 });
     if (request.headers.get("Upgrade") !== "websocket")
@@ -27,6 +34,11 @@ export default {
       (url.hostname === "localhost" || url.hostname === "127.0.0.1");
     const matcher = env.MATCHMAKER.get(env.MATCHMAKER.idFromName("global"));
     const managed = !development && invite === null;
+    const label = development
+      ? "development"
+      : invite !== null
+        ? invite
+        : "matchmaker";
     let assignment: Assignment;
     if (development) {
       assignment = {
@@ -52,11 +64,15 @@ export default {
         ...Object.fromEntries(request.headers),
         "X-Omeglecode-Nickname": nickname,
         "X-Omeglecode-Managed": String(managed),
+        "X-Omeglecode-Label": label,
         "X-Omeglecode-Room": assignment.room,
         "X-Omeglecode-Session": session,
       },
     });
-    if (response.status === 101) return response;
+    if (response.status === 101) {
+      await trackEvent(env, "join", label).catch(() => {});
+      return response;
+    }
 
     if (managed) {
       await matcher.fetch("https://matchmaker/release", {
