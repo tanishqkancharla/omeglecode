@@ -1,8 +1,12 @@
 # Omeglecode
 
-Omegle-style group chat inside the OpenCode v2 sidebar. Each OpenCode session is assigned to a stable, short-lived room with at most eight connected users.
+Omegle-style group chat for coding agents. OpenCode gets a sidebar. Pi gets a live pane above the prompt. Both talk to the same Cloudflare Worker, so `/omegle-connect weekend-test` from either host is the same room.
+
+Each session is assigned to a stable, short-lived room with at most eight connected users. The service never sees prompts, code, or raw session IDs.
 
 ## Try it
+
+### OpenCode v2
 
 Install the OpenCode v2 preview. It uses the separate `opencode2` command and does not replace an existing OpenCode v1 install.
 
@@ -16,9 +20,21 @@ Then start or open a session and run `/omegle-nickname`. Join a shared room with
 
 The sidebar always shows whether you are in a random room or a named room code. Select `[ invite ]` to show the command another person can use to join; from a random room, `[ make invite ]` creates a shareable room first.
 
+### Pi
+
+```sh
+npx --yes opencode-omeglecode@latest install pi
+```
+
+Or `pi install npm:pi-omeglecode`. Start Pi, run `/omegle-nickname`, then the same `/omegle-connect weekend-test`. Chat appears in a boxed pane above the prompt. `ctrl+shift+m` opens a focus overlay to type; Esc returns to Pi. `ctrl+shift+c` compact the pane without disconnecting.
+
+The installer writes `~/.pi/agent/extensions/omeglecode/`. Nickname and last room persist in `~/.pi/agent/omeglecode.json`.
+
 ### Join the same room
 
-The installer adds the plugin to OpenCode's global `cli.json`. Room settings stay in OpenCode's plugin storage rather than its config file.
+Everyone using the same 3–32 character code joins the same Worker room, including mixed OpenCode and Pi clients. Treat the code like an invite link; anyone who knows it can join, up to the eight-person limit. Run `/omegle-invite` to create an invite room and get the exact command to share.
+
+The OpenCode installer adds the plugin to OpenCode's global `cli.json`. Room settings stay in OpenCode's plugin storage rather than its config file.
 
 ```json
 {
@@ -31,11 +47,11 @@ The installer adds the plugin to OpenCode's global `cli.json`. Room settings sta
 }
 ```
 
-Everyone using the same 3–32 character code joins the same room. Treat the code like an invite link; anyone who knows it can join, up to the eight-person limit. Run `/omegle-invite` to create an invite room and get the exact command to share.
-
 ## Packages
 
-- `packages/plugin` — OpenCode v2 TUI plugin and sidebar UI
+- `packages/plugin` — OpenCode v2 TUI plugin, sidebar UI, and `omeglecode` installer
+- `packages/pi` — Pi extension: above-prompt widget, focus overlay, slash commands
+- `packages/client` — shared WebSocket client used by both hosts
 - `packages/worker` — Cloudflare Worker, matchmaker, and chat room Durable Objects
 - `packages/protocol` — shared WebSocket messages and limits
 
@@ -46,7 +62,7 @@ pnpm install
 pnpm dev
 ```
 
-Build and link the plugin into this project's OpenCode v2 config in another terminal:
+Build and link the OpenCode plugin into this project's OpenCode v2 config in another terminal:
 
 ```sh
 pnpm --filter opencode-omeglecode build
@@ -54,7 +70,7 @@ pnpm plugin:link
 npm exec --yes --package=@opencode-ai/cli@beta -- opencode2
 ```
 
-`pnpm plugin:link` writes this project's `.opencode/cli.json` with the shared local development room. The published package uses the hosted service by default.
+`pnpm plugin:link` writes this project's `.opencode/cli.json` with the shared local development room. Point Pi at the same Worker by setting `"endpoint": "ws://127.0.0.1:8787/connect?development=true"` in `~/.pi/agent/omeglecode.json`. The published packages use the hosted service by default.
 
 ## Deploy
 
@@ -65,4 +81,4 @@ pnpm exec alchemy login
 pnpm infra:deploy
 ```
 
-`alchemy.run.ts` owns the Worker URL and Durable Object migrations. The service receives only a user-chosen nickname, a one-way hash of the OpenCode session ID, presence, and chat messages.
+`alchemy.run.ts` owns the Worker URL and Durable Object migrations. The service receives only a user-chosen nickname, a one-way hash of the host session, presence, and chat messages.

@@ -114,7 +114,7 @@
 
       <div class="widget" id="widget">
         <div class="whead">
-          <span><span class="brand">omegle</span>  ·  <span class="count" id="count">3 online</span>  ·  <span id="room">random</span>  ·  <span id="preview"></span></span>
+          <span><span class="brand">omegle</span>  ·  <span class="count" id="count">3 online</span>  ·  <span id="room">random</span><span id="previewWrap"></span></span>
           <span class="invite" id="invite">[ make invite ]</span>
         </div>
         <div class="history" id="history"></div>
@@ -159,7 +159,9 @@
       $("count").textContent = `${state.online} online`;
       $("room").textContent = state.room ? `#${state.room}` : "random";
       $("invite").textContent = state.room ? "[ invite ]" : "[ make invite ]";
-      $("preview").textContent = state.density === "compact" ? lastPreview() : "";
+      $("previewWrap").innerHTML = state.density === "compact" && lastPreview()
+        ? `  ·  ${lastPreview()}`
+        : "";
       $("widget").classList.toggle("compact", state.density === "compact");
       $("widget").classList.toggle("hidden", state.density === "hidden");
       $("widget").classList.toggle("focused", state.focused);

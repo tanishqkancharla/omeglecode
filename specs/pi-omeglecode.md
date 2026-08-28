@@ -230,17 +230,17 @@ Install: `npx omeglecode install pi` writes `~/.pi/agent/extensions/omeglecode/i
 
 ### Phase 1: Shared client
 
-Extract connect, hash, reconnect, send, subscribe from `packages/plugin/src/Chat.ts`. Accept a `host` tag so Pi hashes `pi:`.
+Extract connect, hash, reconnect, send, subscribe from `packages/plugin/src/Chat.ts`. Pi hashes `"pi:" + session file`; OpenCode keeps hashing the raw session ID.
 
 ### Phase 2: Pi extension
 
-- [ ] `session_start` / `session_shutdown`.
-- [ ] `OmegleWidget` above the editor, expanded + compact.
-- [ ] Focus overlay with input; Esc returns to the editor.
-- [ ] Shortcuts and slash commands.
-- [ ] Nickname + room in `~/.pi/agent/omeglecode.json`.
-- [ ] Invite dialog.
-- [ ] Installer target `pi`.
+- [x] `session_start` / `session_shutdown`.
+- [x] `OmegleWidget` above the editor, expanded + compact.
+- [x] Focus overlay with input; Esc returns to the editor.
+- [x] Shortcuts and slash commands.
+- [x] Nickname + room in `~/.pi/agent/omeglecode.json`.
+- [x] Invite dialog.
+- [x] Installer target `pi`.
 
 ### Phase 3: Feel
 
