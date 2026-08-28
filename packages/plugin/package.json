@@ -1,6 +1,6 @@
 {
   "name": "opencode-omeglecode",
-  "version": "0.4.1",
+  "version": "0.4.2",
   "description": "Real-time anonymous group chat in the OpenCode v2 sidebar",
   "license": "MIT",
   "repository": {
