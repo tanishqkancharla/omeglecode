@@ -18,13 +18,18 @@ function connect(
   );
 }
 
-function next(socket: WebSocket): Promise<Record<string, unknown>> {
+function next(
+  socket: WebSocket,
+  match?: (event: Record<string, unknown>) => boolean,
+): Promise<Record<string, unknown>> {
   return new Promise((resolve) => {
-    socket.addEventListener(
-      "message",
-      (event) => resolve(JSON.parse(String(event.data))),
-      { once: true },
-    );
+    const onMessage = (event: MessageEvent) => {
+      const parsed = JSON.parse(String(event.data)) as Record<string, unknown>;
+      if (match && !match(parsed)) return;
+      socket.removeEventListener("message", onMessage);
+      resolve(parsed);
+    };
+    socket.addEventListener("message", onMessage);
   });
 }
 
@@ -95,6 +100,35 @@ describe("chat service", () => {
     expect((await next(firstSocket)).room).toBe((await next(secondSocket)).room);
 
     await Promise.all([close(firstSocket), close(secondSocket)]);
+  });
+
+  test("decrements presence when a socket closes", async () => {
+    const first = await connect(50, "stays", false, "presence-room");
+    const firstSocket = first.webSocket!;
+    firstSocket.accept();
+    expect(await next(firstSocket)).toMatchObject({ type: "ready", online: 1 });
+
+    const joined = next(
+      firstSocket,
+      (event) => event.type === "presence" && event.online === 2,
+    );
+    const second = await connect(51, "leaves", false, "presence-room");
+    const secondSocket = second.webSocket!;
+    secondSocket.accept();
+    expect(await next(secondSocket)).toMatchObject({ type: "ready", online: 2 });
+    expect(await joined).toMatchObject({
+      type: "presence",
+      online: 2,
+    });
+
+    const left = next(
+      firstSocket,
+      (event) => event.type === "presence" && event.online === 1,
+    );
+    await close(secondSocket);
+    expect(await left).toMatchObject({ type: "presence", online: 1 });
+
+    await close(firstSocket);
   });
 
   test("moves stale assignments into an active room", async () => {

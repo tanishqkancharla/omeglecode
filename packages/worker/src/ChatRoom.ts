@@ -121,9 +121,15 @@ export class ChatRoom implements DurableObject {
   async webSocketClose(socket: WebSocket): Promise<void> {
     const data = socket.deserializeAttachment() as SocketData | undefined;
     socket.close();
+    // getWebSockets() can still include a socket in CLOSING after close().
+    const remaining = this.state
+      .getWebSockets()
+      .filter(
+        (open) => open !== socket && open.readyState === WebSocket.OPEN,
+      );
     this.broadcast({
       type: "presence",
-      online: this.state.getWebSockets().length,
+      online: remaining.length,
     });
     if (!data?.managed) return;
     const matcher = this.env.MATCHMAKER.get(
