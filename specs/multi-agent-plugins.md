@@ -94,13 +94,15 @@ For hosts that can paint and take focus.
 
 **OpenCode:** keep the sidebar. It is the reference.
 
-**Pi:** this is the port worth doing. Pi has no right sidebar. Do not fake one by stacking 14 lines of chat above the editor — that steals the transcript. Recommended Pi chrome:
+**Pi:** this is the port worth doing. Full UX contract, Pi API mapping, and interactive mock: [`specs/pi-omeglecode.md`](pi-omeglecode.md).
+
+Pi has no right sidebar slot. It does have a below-editor widget and a session-lived overlay that can stay visible while the editor has focus (`handle.unfocus({ target: editor })`). Use both:
 
 1. **Collapsed (default):** one widget line below the editor. `omegle · 4 online · random · ctrl+shift+m`. New messages flash the count, not the text.
-2. **Expanded:** `ctx.ui.custom({ overlay: true })` as a bottom or right-ish overlay with history + input. Esc closes. This is Pi's native "complex UI" path and matches how Doom/snake/plan-mode extensions already work.
-3. **Session stickiness:** hash `ctx.sessionManager.getSessionFile()` the same way OpenCode hashes `sessionID`. `/new` and `/resume` already tear down and rebuild extensions, so reconnect logic falls out of Pi's lifecycle.
+2. **Expanded:** a right-edge overlay that recreates the OpenCode panel (header, history, invite, inline input). Esc unfocuses and leaves it up. `ctrl+shift+c` hides it. The socket never depends on visibility.
+3. **Session stickiness:** hash `"pi:" + session file path`. `/new` and `/resume` already rebuild extensions.
 
-That is not a sidebar twin. It is the Pi-shaped version of the same feeling: ambient, one keystroke away, never in the agent's mouth.
+Do not dump chat into the widget. That steals the transcript.
 
 ### Ticker + mailbox
 
