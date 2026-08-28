@@ -88,7 +88,7 @@ Toggle again to expand. Hidden entirely is a third press, or `/omegle-toggle` cy
 
 ### Send — type in the Pi prompt
 
-Widgets do not own the keyboard. **`ctrl+shift+m`** (keep OpenCode's chord) puts the existing Pi editor into send mode. The footer status reads `sending to #weekend-test` or `sending to random`. Enter sends to the room. Esc returns to prompting Pi. Slash commands still run.
+Widgets do not own the keyboard. **`ctrl+shift+m`** (keep OpenCode's chord) puts the existing Pi editor into send mode. The footer status reads `sending to #<code>` once the Worker assigns a room — including random matchmaking. Until then it reads `sending to random`. Enter sends to the room. Esc returns to prompting Pi. Slash commands still run.
 
 Do not open a `ctx.ui.custom` overlay to type. Do not add a compose row to the widget. The hallway is read-only chrome; the prompt is the input.
 
@@ -107,20 +107,20 @@ Do not open a `ctx.ui.custom` overlay to type. Do not add a compose row to the w
 
 ### Invite
 
-`/omegle-invite` uses a small centered `ctx.ui.custom` dialog. Random rooms mint a code, reconnect, then show:
+`/omegle-invite` uses a small centered `ctx.ui.custom` dialog. If matchmaking already assigned a code, share that room instead of minting a new one:
 
 ```
 Invite to Omegle
 
-Room: weekend-test
+Room: k7nmpwx2q4
 
 Ask them to run:
-/omegle-connect weekend-test
+/omegle-connect k7nmpwx2q4
 
 Works in OpenCode, Pi, or the companion TUI.
 ```
 
-The widget title switches from `random` to `#weekend-test`.
+The widget title shows `#k7nmpwx2q4` as soon as `ready` arrives, not `random`.
 
 ## Why this is the ceiling
 

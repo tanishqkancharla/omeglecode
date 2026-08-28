@@ -49,6 +49,14 @@ export function validRoomCode(value: string): boolean {
   return /^[a-zA-Z0-9][a-zA-Z0-9_-]{2,31}$/.test(value);
 }
 
+const inviteAlphabet = "abcdefghijkmnopqrstuvwxyz23456789";
+
+export function inviteCode(): string {
+  return Array.from(crypto.getRandomValues(new Uint8Array(10)), (value) =>
+    inviteAlphabet.charAt(value % inviteAlphabet.length),
+  ).join("");
+}
+
 export function parseClientEvent(value: string): ClientEvent | undefined {
   const parsed = json(value);
   if (typeof parsed !== "object" || parsed === null) return;

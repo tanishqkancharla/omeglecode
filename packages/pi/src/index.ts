@@ -26,6 +26,7 @@ export default function omeglecode(pi: ExtensionAPI) {
   let disconnect: (() => void) | undefined;
   let sendMode = false;
   let unbindEscape: (() => void) | undefined;
+  let unbindSendStatus: (() => void) | undefined;
   const settings: Settings = loadSettings();
   const hallway: Hallway = {
     chat: createChat({
@@ -68,8 +69,10 @@ export default function omeglecode(pi: ExtensionAPI) {
     );
   };
 
+  const currentRoom = () => hallway.chat.room() || settings.room;
+
   const statusText = (ctx: ExtensionContext) => {
-    const label = sendingStatus(settings.room);
+    const label = sendingStatus(currentRoom());
     return ctx.ui.theme?.fg("accent", label) ?? label;
   };
 
@@ -81,12 +84,15 @@ export default function omeglecode(pi: ExtensionAPI) {
   const exitSendMode = (ctx: ExtensionContext) => {
     if (!sendMode) return;
     sendMode = false;
+    unbindSendStatus?.();
+    unbindSendStatus = undefined;
     if (ctx.hasUI) ctx.ui.setStatus?.(WIDGET_ID, undefined);
   };
 
   const enterSendMode = (ctx: ExtensionContext) => {
     sendMode = true;
-    refreshSendStatus(ctx);
+    unbindSendStatus?.();
+    unbindSendStatus = hallway.chat.subscribe(() => refreshSendStatus(ctx));
   };
 
   const wrapEditor = (inner: Component, ctx: ExtensionContext): Component => {
@@ -139,7 +145,13 @@ export default function omeglecode(pi: ExtensionAPI) {
 
   const invite = async (ctx: ExtensionContext) => {
     if (!(await ensureNickname(ctx))) return;
-    if (!settings.room) {
+    const assigned = currentRoom();
+    if (!settings.room && validRoomCode(assigned)) {
+      settings.room = assigned;
+      persist();
+      showWidget(ctx);
+      refreshSendStatus(ctx);
+    } else if (!settings.room) {
       settings.room = inviteCode();
       persist();
       connect();

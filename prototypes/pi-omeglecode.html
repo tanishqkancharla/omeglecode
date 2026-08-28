@@ -112,7 +112,7 @@
 
       <div class="widget" id="widget">
         <div class="whead">
-          <span><span class="brand">omegle</span>  ·  <span class="count" id="count">3 online</span>  ·  <span id="room">random</span><span id="previewWrap"></span></span>
+          <span><span class="brand">omegle</span>  ·  <span class="count" id="count">3 online</span>  ·  <span id="room">#k7nmpwx2q4</span><span id="previewWrap"></span></span>
         </div>
         <div class="history" id="history"></div>
       </div>
@@ -126,9 +126,9 @@
       <div class="dialog" id="dialog">
         <div class="card">
           <h2>Invite to Omegle</h2>
-          <div>Room: <code>weekend-test</code></div>
+          <div>Room: <code>k7nmpwx2q4</code></div>
           <div class="muted">Ask them to run:</div>
-          <div><code>/omegle-connect weekend-test</code></div>
+          <div><code>/omegle-connect k7nmpwx2q4</code></div>
           <div class="muted" style="margin-top:14px">Works in OpenCode, Pi, or the companion TUI.</div>
           <div class="muted" style="margin-top:18px;text-align:right">enter</div>
         </div>
@@ -139,7 +139,7 @@
     const $ = (id) => document.getElementById(id);
     const state = {
       online: 3,
-      room: "",
+      room: "k7nmpwx2q4",
       density: "expanded",
       sending: false,
       messages: [{ nick: "nova", text: "shipping a patch on 1.1", mine: false, time: "12:04" }],
@@ -245,7 +245,7 @@
       render();
       await sleep(800);
 
-      caption("The footer says sending to random. The model never sees it.");
+      caption("The footer says sending to #k7nmpwx2q4. The model never sees it.");
       await typeInto($("editorText"), "yeah, 1.2 is fine", 42);
       await sleep(350);
       addMessage({ nick: "kai", text: "yeah, 1.2 is fine", mine: true, time: "12:06" });
@@ -274,7 +274,6 @@
       render();
       await sleep(2400);
       $("dialog").classList.remove("open");
-      state.room = "weekend-test";
       render();
       await sleep(1200);
 
@@ -289,7 +288,7 @@
 
     function reset(updateCaption = true) {
       Object.assign(state, {
-        online: 3, room: "", density: "expanded", sending: false,
+        online: 3, room: "k7nmpwx2q4", density: "expanded", sending: false,
         messages: [{ nick: "nova", text: "shipping a patch on 1.1", mine: false, time: "12:04" }],
       });
       $("you2").hidden = true;

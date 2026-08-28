@@ -95,7 +95,7 @@ export class OmegleWidget implements Component {
       width,
       mode: this.hallway.density === "compact" ? "compact" : "expanded",
       online: this.hallway.chat.online(),
-      room: this.hallway.room,
+      room: this.hallway.chat.room() || this.hallway.room,
       pulse: Date.now() < this.pulseUntil,
       body,
       bodyRows: rows,

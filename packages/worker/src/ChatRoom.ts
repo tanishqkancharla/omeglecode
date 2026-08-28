@@ -46,6 +46,7 @@ export class ChatRoom implements DurableObject {
       label,
       managed: managed === "true",
       nickname,
+      room,
       session,
       sent: [],
     } satisfies SocketData);
@@ -136,7 +137,7 @@ export class ChatRoom implements DurableObject {
     await matcher.fetch("https://matchmaker/release", {
       method: "POST",
       body: JSON.stringify({
-        room: this.state.id.toString(),
+        room: data.room,
         session: data.session,
       }),
     });

@@ -203,7 +203,7 @@ const plugin: Plugin.Definition = {
 
     const invite = async () => {
       if (!(await ensureNickname())) return;
-      let value = room();
+      let value = chat.room() || room();
       if (!value) {
         value = inviteCode();
         await setSettings((draft) => {
@@ -212,6 +212,11 @@ const plugin: Plugin.Definition = {
         setRoomValue(value);
         const name = nickname();
         if (activeSession && name) connect(activeSession, name);
+      } else if (!room() && validRoomCode(value)) {
+        await setSettings((draft) => {
+          draft.room = value;
+        });
+        setRoomValue(value);
       }
       await context.ui.dialog.alert({
         title: "Invite to Omegle",

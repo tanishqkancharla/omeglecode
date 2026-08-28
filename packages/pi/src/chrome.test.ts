@@ -27,8 +27,10 @@ describe("hallway chrome", () => {
   test("labels random vs named rooms", () => {
     expect(roomLabel("")).toBe("random");
     expect(roomLabel("weekend-test")).toBe("#weekend-test");
+    expect(roomLabel("k7nmpwx2q4")).toBe("#k7nmpwx2q4");
     expect(sendingStatus("")).toBe("sending to random");
     expect(sendingStatus("weekend-test")).toBe("sending to #weekend-test");
+    expect(sendingStatus("k7nmpwx2q4")).toBe("sending to #k7nmpwx2q4");
   });
 
   test("renders an expanded box with matching line widths", () => {
