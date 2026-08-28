@@ -128,6 +128,22 @@ describe("chat service", () => {
     await close(secondSocket);
     expect(await left).toMatchObject({ type: "presence", online: 1 });
 
+    const rejoined = next(
+      firstSocket,
+      (event) => event.type === "presence" && event.online === 2,
+    );
+    const third = await connect(52, "also-leaves", false, "presence-room");
+    const thirdSocket = third.webSocket!;
+    thirdSocket.accept();
+    expect(await next(thirdSocket)).toMatchObject({ type: "ready", online: 2 });
+    expect(await rejoined).toMatchObject({ type: "presence", online: 2 });
+    const leftAgain = next(
+      firstSocket,
+      (event) => event.type === "presence" && event.online === 1,
+    );
+    await close(thirdSocket);
+    expect(await leftAgain).toMatchObject({ type: "presence", online: 1 });
+
     await close(firstSocket);
   });
 
