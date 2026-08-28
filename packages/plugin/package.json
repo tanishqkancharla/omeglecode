@@ -34,10 +34,11 @@
     "opencode": ">=0.0.0-beta-18414"
   },
   "scripts": {
-    "build": "esbuild src/tui.tsx --bundle --format=esm --platform=node --jsx=automatic --jsx-import-source=@opentui/solid --outfile=dist/tui.js --external:@opencode-ai/plugin --external:@opentui/core --external:@opentui/solid --external:solid-js && cp package.js install.js dist/",
+    "build": "pnpm --filter pi-omeglecode build && esbuild src/tui.tsx --bundle --format=esm --platform=node --jsx=automatic --jsx-import-source=@opentui/solid --outfile=dist/tui.js --external:@opencode-ai/plugin --external:@opentui/core --external:@opentui/solid --external:solid-js && cp package.js install.js ../pi/dist/index.js dist/ && mv dist/index.js dist/pi-omeglecode.js",
     "check": "tsc --noEmit"
   },
   "devDependencies": {
+    "@omeglecode/client": "workspace:*",
     "@omeglecode/protocol": "workspace:*",
     "@opencode-ai/plugin": "0.0.0-beta-18414",
     "@opencode-ai/theme": "0.0.0-beta-18414",

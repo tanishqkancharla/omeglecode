@@ -2,19 +2,15 @@
 import type { Plugin } from "@opencode-ai/plugin/tui";
 import { createSignal, onCleanup } from "solid-js";
 import { validNickname, validRoomCode } from "@omeglecode/protocol";
+import {
+  DEFAULT_ENDPOINT,
+  inviteCode,
+  normalizeEndpoint,
+} from "@omeglecode/client";
 import { createChat } from "./Chat.js";
 import { Panel } from "./Panel.js";
 
 const key = "omeglecode.settings";
-const defaultEndpoint =
-  "wss://omeglecode.tanishqkancharla3.workers.dev/connect";
-
-function inviteCode(): string {
-  const alphabet = "abcdefghijkmnopqrstuvwxyz23456789";
-  return Array.from(crypto.getRandomValues(new Uint8Array(10)), (value) =>
-    alphabet.charAt(value % alphabet.length),
-  ).join("");
-}
 
 function Commands(props: {
   context: Plugin.Context;
@@ -105,10 +101,8 @@ const plugin: Plugin.Definition = {
     const configured =
       typeof context.options.endpoint === "string"
         ? context.options.endpoint
-        : defaultEndpoint;
-    const endpoint = configured
-      .replace(/^http:/, "ws:")
-      .replace(/^https:/, "wss:");
+        : DEFAULT_ENDPOINT;
+    const endpoint = normalizeEndpoint(configured);
     const configuredRoom = context.options.room;
     if (
       configuredRoom !== undefined &&
