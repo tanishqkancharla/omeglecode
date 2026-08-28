@@ -112,10 +112,9 @@ describe("hallway chrome", () => {
     ]);
   });
 
-  test("highlights the [ai] nickname prefix", () => {
+  test("emphasizes the agent name over the [ai] prefix", () => {
     const tagged = {
-      fg: (name: string, text: string) =>
-        name === "warning" ? `[${text}]` : text,
+      fg: (name: string, text: string) => `{${name}:${text}}`,
     };
     const lines = historyLines(
       [{ nickname: "[ai] wes", text: "boohoo svelte", sentAt: 0 }],
@@ -123,9 +122,13 @@ describe("hallway chrome", () => {
       "kai",
       tagged,
     );
-    expect(lines[0]).toContain("[[ai]]");
-    expect(lines[0]).toContain("wes");
-    expect(lines[1]).toBe("boohoo svelte");
+    expect(lines[0]).toContain("{dim:[ai]}");
+    expect(lines[0]).toContain("{text:wes}");
+    expect(lines[0]).not.toMatch(/\{warning:\[ai\]\}/);
+    expect(lines[1]).toBe("{text:boohoo svelte}");
+    expect(
+      lastPreview([{ nickname: "[ai] wes", text: "boohoo svelte", sentAt: 0 }]),
+    ).toBe("wes: boohoo svelte");
   });
 
   test("accepts agent nicknames with an [ai] prefix", () => {
