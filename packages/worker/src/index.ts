@@ -1,3 +1,4 @@
+import { liveData, livePage } from "./live.js";
 import { validNickname, validRoomCode } from "@omeglecode/protocol";
 import { ChatRoom } from "./ChatRoom.js";
 import { Matchmaker, trackEvent } from "./Matchmaker.js";
@@ -19,6 +20,9 @@ export default {
   async fetch(request: Request, env: Env): Promise<Response> {
     const url = new URL(request.url);
     if (url.pathname === "/health") return Response.json({ ok: true });
+    if (url.pathname === "/live" || url.pathname === "/live/")
+      return livePage(request);
+    if (url.pathname === "/live/data") return liveData(request, env);
     if (url.pathname === "/stats") {
       if (request.method !== "GET")
         return new Response("Method not allowed", { status: 405 });

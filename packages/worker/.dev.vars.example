@@ -1,0 +1,5 @@
+# Optional. Account Analytics read token for GET /live Durable Object cost.
+# Create at https://dash.cloudflare.com/profile/api-tokens (Account.Account Analytics:Read).
+# Leave unset to serve joins/messages with cost in an unavailable state.
+CLOUDFLARE_API_TOKEN=
+# CLOUDFLARE_ANALYTICS_TOKEN is also accepted if you prefer that name.

@@ -5,3 +5,5 @@ dist/
 .dev.vars
 .opencode/
 .DS_Store
+packages/worker/src/generated/
+packages/worker/live/dist/
