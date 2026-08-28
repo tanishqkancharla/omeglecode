@@ -60,7 +60,13 @@ describe("chat service", () => {
       message: { nickname: "user1", text: "hello" },
     });
 
-    await Promise.all(sockets.map(close));
+    await Promise.all(sockets.slice(0, 2).map(close));
+    const packed = await connect(10, "user10");
+    const packedSocket = packed.webSocket!;
+    packedSocket.accept();
+    expect((await next(packedSocket)).room).toBe(rooms[0]);
+
+    await Promise.all([...sockets.slice(2), packedSocket].map(close));
   });
 
   test("puts local development clients in one room", async () => {
@@ -89,5 +95,26 @@ describe("chat service", () => {
     expect((await next(firstSocket)).room).toBe((await next(secondSocket)).room);
 
     await Promise.all([close(firstSocket), close(secondSocket)]);
+  });
+
+  test("moves stale assignments into an active room", async () => {
+    const first = await connect(40, "returning");
+    const firstSocket = first.webSocket!;
+    firstSocket.accept();
+    const staleRoom = String((await next(firstSocket)).room);
+    await close(firstSocket);
+
+    const second = await connect(41, "waiting");
+    const secondSocket = second.webSocket!;
+    secondSocket.accept();
+    const activeRoom = String((await next(secondSocket)).room);
+    expect(activeRoom).not.toBe(staleRoom);
+
+    const reconnected = await connect(40, "returning");
+    const reconnectedSocket = reconnected.webSocket!;
+    reconnectedSocket.accept();
+    expect((await next(reconnectedSocket)).room).toBe(activeRoom);
+
+    await Promise.all([close(secondSocket), close(reconnectedSocket)]);
   });
 });

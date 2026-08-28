@@ -11,14 +11,6 @@ type Room = { count: number };
 
 const ttl = 6 * 60 * 60 * 1000;
 
-async function score(session: string, room: string): Promise<string> {
-  const bytes = new TextEncoder().encode(`${session}:${room}`);
-  const hash = await crypto.subtle.digest("SHA-256", bytes);
-  return Array.from(new Uint8Array(hash), (byte) =>
-    byte.toString(16).padStart(2, "0"),
-  ).join("");
-}
-
 export class Matchmaker implements DurableObject {
   constructor(
     private readonly state: DurableObjectState,
@@ -46,8 +38,8 @@ export class Matchmaker implements DurableObject {
 
       if (current && current.expiresAt > Date.now()) {
         const roomKey = `room:${current.room}`;
-        const room = (await storage.get<Room>(roomKey)) ?? { count: 0 };
-        if (room.count < limits.room) {
+        const room = await storage.get<Room>(roomKey);
+        if (room && room.count > 0 && room.count < limits.room) {
           await storage.put(roomKey, { count: room.count + 1 });
           await storage.put(key, {
             ...current,
@@ -59,17 +51,18 @@ export class Matchmaker implements DurableObject {
       }
 
       const rooms = await storage.list<Room>({ prefix: "room:" });
+      for (const [roomKey, room] of rooms) {
+        if (room.count === 0) await storage.delete(roomKey);
+      }
       const available = [...rooms.entries()].filter(
-        ([, room]) => room.count < limits.room,
+        ([, room]) => room.count > 0 && room.count < limits.room,
       );
-      const ranked = await Promise.all(
-        available.map(async ([roomKey]) => ({
-          room: roomKey.slice(5),
-          score: await score(sessionID, roomKey),
-        })),
+      available.sort(
+        ([firstKey, first], [secondKey, second]) =>
+          second.count - first.count || firstKey.localeCompare(secondKey),
       );
-      ranked.sort((a, b) => b.score.localeCompare(a.score));
-      const room = ranked[0]?.room ?? this.env.ROOMS.newUniqueId().toString();
+      const room =
+        available[0]?.[0].slice(5) ?? this.env.ROOMS.newUniqueId().toString();
       const roomKey = `room:${room}`;
       const record = (await storage.get<Room>(roomKey)) ?? { count: 0 };
       await storage.put(roomKey, { count: record.count + 1 });
@@ -97,9 +90,12 @@ export class Matchmaker implements DurableObject {
       const roomKey = `room:${assignment.room}`;
       const room = await storage.get<Room>(roomKey);
       await storage.put(key, { ...session, connected: false });
-      await storage.put(roomKey, {
-        count: Math.max(0, (room?.count ?? 1) - 1),
-      });
+      const count = Math.max(0, (room?.count ?? 1) - 1);
+      if (count === 0) {
+        await storage.delete(roomKey);
+        return;
+      }
+      await storage.put(roomKey, { count });
     });
     return new Response(undefined, { status: 204 });
   }
