@@ -1,5 +1,6 @@
 import { SELF } from "cloudflare:test";
 import { describe, expect, test } from "vitest";
+import type { Stats } from "../src/types.js";
 
 function connect(
   session: number,
@@ -38,6 +39,12 @@ function close(socket: WebSocket): Promise<void> {
     socket.addEventListener("close", () => resolve(), { once: true });
     socket.close();
   });
+}
+
+async function stats(): Promise<Stats> {
+  const response = await SELF.fetch("http://example/stats");
+  expect(response.status).toBe(200);
+  return response.json<Stats>();
 }
 
 describe("chat service", () => {
@@ -166,5 +173,57 @@ describe("chat service", () => {
     expect((await next(reconnectedSocket)).room).toBe(activeRoom);
 
     await Promise.all([close(secondSocket), close(reconnectedSocket)]);
+  });
+
+  test("tracks joins and messages by room", async () => {
+    const before = await stats();
+
+    const first = await connect(60, "stat1", false, "stats-room");
+    const second = await connect(61, "stat2", false, "stats-room");
+    const firstSocket = first.webSocket!;
+    const secondSocket = second.webSocket!;
+    firstSocket.accept();
+    secondSocket.accept();
+    await next(firstSocket);
+    await next(secondSocket);
+
+    const received = next(secondSocket, (event) => event.type === "message");
+    firstSocket.send(JSON.stringify({ type: "message", text: "counted" }));
+    expect(await received).toMatchObject({
+      type: "message",
+      message: { nickname: "stat1", text: "counted" },
+    });
+
+    const after = await stats();
+    expect(after.joins).toBe(before.joins + 2);
+    expect(after.messages).toBe(before.messages + 1);
+    expect(after.rooms["stats-room"]).toEqual({
+      joins: (before.rooms["stats-room"]?.joins ?? 0) + 2,
+      messages: (before.rooms["stats-room"]?.messages ?? 0) + 1,
+    });
+
+    await Promise.all([close(firstSocket), close(secondSocket)]);
+  });
+
+  test("labels matchmaker and development joins separately", async () => {
+    const before = await stats();
+    const matched = await connect(70, "matched");
+    const local = await connect(71, "localdev", true);
+    const matchedSocket = matched.webSocket!;
+    const localSocket = local.webSocket!;
+    matchedSocket.accept();
+    localSocket.accept();
+    await next(matchedSocket);
+    await next(localSocket);
+
+    const after = await stats();
+    expect(after.rooms.matchmaker?.joins).toBe(
+      (before.rooms.matchmaker?.joins ?? 0) + 1,
+    );
+    expect(after.rooms.development?.joins).toBe(
+      (before.rooms.development?.joins ?? 0) + 1,
+    );
+
+    await Promise.all([close(matchedSocket), close(localSocket)]);
   });
 });
